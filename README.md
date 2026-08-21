@@ -2,8 +2,7 @@
 
 A wall-mounted dashboard for household widgets — todo lists per family
 member, weather, and public transport departures — meant to eventually run
-on a touchscreen in the living room. Built for private use and also
-published on GitHub as a portfolio piece.
+on a touchscreen in the living room.
 
 ## Stack
 
