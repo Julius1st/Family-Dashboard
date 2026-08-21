@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/base:trixie
 
-ARG LOCALE=de-DE.UTF-8
+ARG LOCALE=C.UTF-8
 ARG TIME_ZONE=Europe/Berlin
 ARG USERNAME=devuser
 ARG NODE_VERSION=24

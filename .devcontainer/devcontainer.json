@@ -7,5 +7,10 @@
       "NODE_VERSION": "24"
     }
   },
-  "remoteUser": "devuser"
+  "remoteUser": "devuser",
+  "customizations": {
+    "jetbrains": {
+      "plugins": ["com.anthropic.code.plugin"]
+    }
+  },
 }
