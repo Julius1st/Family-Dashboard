@@ -1,7 +1,8 @@
 # Plan
 
-Family dashboard: private use first, also published on GitHub as a portfolio
-piece. Runs on a wall-mounted touchscreen in the living room eventually.
+Family dashboard for household widgets — todo lists per family member,
+weather, and public transport departures. Runs on a wall-mounted touchscreen
+in the living room eventually.
 
 ## Decisions
 
@@ -20,7 +21,7 @@ piece. Runs on a wall-mounted touchscreen in the living room eventually.
   `/api/widgets`; the Angular shell dynamically mounts one component per
   widget type. Each widget owns its own endpoints/persistence behind the
   shared contract, so adding a widget later doesn't touch the framework.
-- Portfolio polish (tests, CI via GitHub Actions, Docker/Compose, docs) is
+- Engineering polish (tests, CI via GitHub Actions, Docker/Compose, docs) is
   baked into every phase from Phase 0, not bolted on at the end.
 - Deployment hardware (Raspberry Pi vs NAS vs server) is intentionally left
   undecided/deferred — not a blocker for v1, which runs via
