@@ -38,3 +38,6 @@ ENV NPM_CONFIG_PREFIX=/home/${USERNAME}/.npm-global
 ENV PATH=/home/${USERNAME}/.npm-global/bin:$PATH
 RUN mkdir -p /home/${USERNAME}/.npm-global \
     && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.npm-global
+
+# Install Java
+RUN apt-get install -y openjdk-25-jdk
