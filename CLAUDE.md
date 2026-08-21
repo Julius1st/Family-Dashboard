@@ -8,8 +8,10 @@ public transport departures). Runs on a touchscreen in the living room.
 - Backend: Spring Boot 4.1, Java 25. Lives in `backend/`.
 - Frontend: Angular 22 (standalone components, signals, zoneless). Lives in `frontend/`.
 - Packaging: the Angular build outputs into the Spring Boot jar; one artifact.
-- Persistence: not yet. Widget data is in-memory for now; PostgreSQL and Flyway
-  arrive in a later phase. Do not add a database dependency unless asked.
+- Persistence: H2 in file-persistent mode via Spring Data JPA, from the
+  start. Write JPA/Hibernate-portable code (avoid H2-specific SQL) so
+  swapping the datasource to PostgreSQL later is a config change, not a
+  rewrite. Flyway arrives when PostgreSQL does.
 
 ## Commands
 

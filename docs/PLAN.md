@@ -10,9 +10,10 @@ piece. Runs on a wall-mounted touchscreen in the living room eventually.
 - Monorepo: `backend/` and `frontend/` in this one repo.
 - No authentication — shared, no-login dashboard. LAN-only access; no
   remote/outside-home access planned for now.
-- Persistence: none yet. Widget data is in-memory to start; PostgreSQL and
-  Flyway are introduced in a later phase, not from day one. Don't add a DB
-  dependency before that phase without asking.
+- Persistence: H2, file-persistent mode, via Spring Data JPA from the start
+  — written in a JPA/Hibernate-portable way (avoid H2-specific SQL) so it
+  can be swapped to PostgreSQL later without a rewrite. Flyway arrives when
+  PostgreSQL does.
 - Household members are hardcoded in config for v1 (e.g. `application.yml`)
   — no admin UI/DB-backed CRUD yet.
 - Widget architecture: a backend `Widget` contract + registry exposed via
