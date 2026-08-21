@@ -30,6 +30,26 @@ container and the wrapper fetches it.
 - Touch UI: interactive targets at least 44px, no hover-dependent behaviour.
 - Regular, small commits with descriptive messages. Avoid large, multi-purpose PRs.
 
+## Workflow
+
+See `docs/PLAN.md` for the phased roadmap and the decisions behind it.
+
+Implementation tasks use an implementer/reviewer subagent loop, not a direct
+implementation:
+
+1. Spin up an implementer agent scoped to one feature that fits on a single
+   branch. If a task is too large for one sensible branch, split it into
+   smaller branch-scoped tasks up front instead of doing one large run.
+2. Once it's done, spin up a separate reviewer agent to review the branch
+   like a human teammate would — correctness, and also flagging when the
+   code has become more complex than sensible.
+3. Pass the reviewer's feedback back to the *same* implementer agent
+   (continue it, don't respawn fresh) — it must either change the code or
+   defend its decision.
+4. Loop steps 2-3 until both the implementer and reviewer are satisfied.
+5. Only then hand the branch to the user for the final human review. Don't
+   ask the user to look at it mid-loop.
+
 ## Environment
 
 This runs in a dev container behind a default-deny egress firewall. Only the
