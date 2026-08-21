@@ -1,0 +1,11 @@
+{
+  "name": "AI Coding Agent Development Container",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "USERNAME": "devuser",
+      "NODE_VERSION": "24"
+    }
+  },
+  "remoteUser": "devuser"
+}
