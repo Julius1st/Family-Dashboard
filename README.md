@@ -18,15 +18,16 @@ on a touchscreen in the living room.
 
 ## Status
 
-This project is still in Phase 0 (repo scaffolding). The `backend/` and
-`frontend/` directories referenced above don't exist yet, so there is
-nothing to run at this point. See [`docs/PLAN.md`](docs/PLAN.md) for the
-full phased roadmap and the decisions behind it.
+Phase 1 (widget framework backend) is done: `backend/` builds, boots, and
+exposes `/api/widgets`, with CI running its tests on every push/PR. Phase 2
+(dashboard shell frontend) is up next — `frontend/` doesn't exist yet. See
+[`docs/PLAN.md`](docs/PLAN.md) for the full phased roadmap and the
+decisions behind it.
 
 ## Running the project
 
-Once the backend and frontend exist, use these commands (from the repo
-root):
+The backend can be run today; the frontend commands below will work once
+Phase 2 adds `frontend/` (from the repo root):
 
 - Backend tests: `cd backend && ./mvnw test`
 - Backend run: `cd backend && ./mvnw spring-boot:run`

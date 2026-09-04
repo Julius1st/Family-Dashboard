@@ -31,7 +31,7 @@ in the living room eventually.
 
 - [x] **Phase 0 — Scaffolding.** Devcontainer, `CLAUDE.md` conventions. Still
       open: CI skeleton, Dockerfiles/compose, license.
-- [ ] **Phase 1 — Widget framework backend.** `Widget` contract, registry,
+- [x] **Phase 1 — Widget framework backend.** `Widget` contract, registry,
       `/api/widgets`, unit tests.
 - [ ] **Phase 2 — Dashboard shell frontend.** Dynamic widget loading from the
       API, component tests.
