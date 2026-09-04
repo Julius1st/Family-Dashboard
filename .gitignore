@@ -1,3 +1,8 @@
 # Backend (Maven / Spring Boot)
 backend/target/
 backend/data/
+
+# Frontend (Angular)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
