@@ -12,3 +12,8 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
+
+household:
+  members:
+    - Alice
+    - Bob
