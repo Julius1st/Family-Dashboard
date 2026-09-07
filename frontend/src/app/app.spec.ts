@@ -1,10 +1,16 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { WidgetService } from './widget.service';
 
 describe('App', () => {
   beforeEach(async () => {
+    // App mounts DashboardShell, which depends on WidgetService. Stub it
+    // out here so this smoke test doesn't make a real HTTP call (and
+    // doesn't leave a pending request that would block `whenStable()`).
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [{ provide: WidgetService, useValue: { widgets: signal([]) } }],
     })
       .compileComponents();
   });

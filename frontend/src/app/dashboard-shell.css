@@ -1,0 +1,10 @@
+.dashboard-shell__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-shell__empty,
+.dashboard-shell__loading {
+  padding: 1rem;
+}
