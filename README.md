@@ -18,13 +18,13 @@ on a touchscreen in the living room.
 
 ## Status
 
-Phases 1 and 2 are done: `backend/` builds, boots, and exposes
-`/api/widgets`; `frontend/` is a standalone Angular dev server that fetches
-that endpoint and renders a dashboard shell with one tile per widget, with
-CI running both sides' tests on every push/PR. Phase 3 (the first real
-widget — per-household-member todo lists) is up next. See
-[`docs/PLAN.md`](docs/PLAN.md) for the full phased roadmap and the
-decisions behind it.
+Phases 1 through 3 are done: `backend/` builds, boots, and exposes
+`/api/widgets` plus a `/api/todos` CRUD API backing the first real widget;
+`frontend/` renders a dashboard shell with a working Todo widget —
+per-household-member lists you can add to, check off, and delete — with CI
+running both sides' tests on every push/PR. Phase 4 (deployment packaging)
+is up next. See [`docs/PLAN.md`](docs/PLAN.md) for the full phased roadmap
+and the decisions behind it.
 
 ## Running the project
 
