@@ -33,7 +33,7 @@ in the living room eventually.
       open: CI skeleton, Dockerfiles/compose, license.
 - [x] **Phase 1 — Widget framework backend.** `Widget` contract, registry,
       `/api/widgets`, unit tests.
-- [ ] **Phase 2 — Dashboard shell frontend.** Dynamic widget loading from the
+- [x] **Phase 2 — Dashboard shell frontend.** Dynamic widget loading from the
       API, component tests.
 - [ ] **Phase 3 — Todo widget.** First real widget built on the framework —
       per-household-member CRUD lists, end-to-end.

@@ -18,16 +18,17 @@ on a touchscreen in the living room.
 
 ## Status
 
-Phase 1 (widget framework backend) is done: `backend/` builds, boots, and
-exposes `/api/widgets`, with CI running its tests on every push/PR. Phase 2
-(dashboard shell frontend) is up next — `frontend/` doesn't exist yet. See
+Phases 1 and 2 are done: `backend/` builds, boots, and exposes
+`/api/widgets`; `frontend/` is a standalone Angular dev server that fetches
+that endpoint and renders a dashboard shell with one tile per widget, with
+CI running both sides' tests on every push/PR. Phase 3 (the first real
+widget — per-household-member todo lists) is up next. See
 [`docs/PLAN.md`](docs/PLAN.md) for the full phased roadmap and the
 decisions behind it.
 
 ## Running the project
 
-The backend can be run today; the frontend commands below will work once
-Phase 2 adds `frontend/` (from the repo root):
+Both the backend and frontend can be run today (from the repo root):
 
 - Backend tests: `cd backend && ./mvnw test`
 - Backend run: `cd backend && ./mvnw spring-boot:run`
