@@ -14,9 +14,13 @@ describe('DashboardShell', () => {
   }
 
   it('renders one tile per widget returned by the service', async () => {
+    // Ids deliberately not registered in widget-tile-registry.ts (unlike
+    // e.g. 'todo'), so both resolve to the generic fallback tile — this
+    // test is about the shell's per-widget rendering loop, not any one
+    // widget's dedicated component.
     const widgets: WidgetDescriptor[] = [
-      { id: 'todo', displayName: 'Todo' },
-      { id: 'weather', displayName: 'Weather' },
+      { id: 'unregistered-widget-a', displayName: 'Widget A' },
+      { id: 'unregistered-widget-b', displayName: 'Widget B' },
     ];
     configureWithWidgets(widgets);
 
@@ -26,8 +30,8 @@ describe('DashboardShell', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const tiles = compiled.querySelectorAll('app-widget-fallback-tile');
     expect(tiles.length).toBe(2);
-    expect(compiled.textContent).toContain('Todo');
-    expect(compiled.textContent).toContain('Weather');
+    expect(compiled.textContent).toContain('Widget A');
+    expect(compiled.textContent).toContain('Widget B');
   });
 
   it('renders a non-blank empty state when there are no widgets', async () => {

@@ -1,0 +1,59 @@
+@if (members(); as memberList) {
+  @if (items(); as itemList) {
+    @if (memberList.length === 0) {
+      <p class="todo-widget-tile__empty">No household members are configured.</p>
+    } @else {
+      <div class="todo-widget-tile__grid">
+        @for (member of memberList; track member) {
+          <section class="todo-widget-tile__member">
+            <h3 class="todo-widget-tile__member-name">{{ member }}</h3>
+
+            @if (itemsFor(member, itemList).length === 0) {
+              <p class="todo-widget-tile__member-empty">No to-dos yet.</p>
+            } @else {
+              <ul class="todo-widget-tile__list">
+                @for (item of itemsFor(member, itemList); track item.id) {
+                  <li class="todo-widget-tile__item">
+                    <button
+                      type="button"
+                      class="todo-widget-tile__toggle"
+                      [class.todo-widget-tile__toggle--done]="item.done"
+                      role="checkbox"
+                      [attr.aria-checked]="item.done"
+                      (click)="onToggle(item)"
+                    >
+                      {{ item.description }}
+                    </button>
+                    <button
+                      type="button"
+                      class="todo-widget-tile__delete"
+                      [attr.aria-label]="'Delete ' + item.description"
+                      (click)="onDelete(item.id)"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+
+            <form class="todo-widget-tile__add" (submit)="onAdd(member, descInput, $event)">
+              <input
+                #descInput
+                type="text"
+                class="todo-widget-tile__add-input"
+                [attr.aria-label]="'Add a to-do for ' + member"
+                placeholder="Add a to-do…"
+              />
+              <button type="submit" class="todo-widget-tile__add-button">Add</button>
+            </form>
+          </section>
+        }
+      </div>
+    }
+  } @else {
+    <p class="todo-widget-tile__loading">Loading to-dos…</p>
+  }
+} @else {
+  <p class="todo-widget-tile__loading">Loading to-dos…</p>
+}
