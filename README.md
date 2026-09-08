@@ -18,13 +18,15 @@ on a touchscreen in the living room.
 
 ## Status
 
-Phases 1 through 3 are done: `backend/` builds, boots, and exposes
+Phases 1 through 4 are done: `backend/` builds, boots, and exposes
 `/api/widgets` plus a `/api/todos` CRUD API backing the first real widget;
 `frontend/` renders a dashboard shell with a working Todo widget —
-per-household-member lists you can add to, check off, and delete — with CI
-running both sides' tests on every push/PR. Phase 4 (deployment packaging)
-is up next. See [`docs/PLAN.md`](docs/PLAN.md) for the full phased roadmap
-and the decisions behind it.
+per-household-member lists you can add to, check off, and delete — tuned
+for a fixed touch kiosk display; the whole app packages into a single
+Docker image runnable via `docker-compose up`; and CI runs both sides'
+tests on every push/PR. Phase 5 (weather/transit widgets, real hardware
+deployment) is up next. See [`docs/PLAN.md`](docs/PLAN.md) for the full
+phased roadmap and the decisions behind it.
 
 ## Running the project
 

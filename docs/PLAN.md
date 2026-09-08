@@ -37,7 +37,7 @@ in the living room eventually.
       API, component tests.
 - [x] **Phase 3 — Todo widget.** First real widget built on the framework —
       per-household-member CRUD lists, end-to-end.
-- [ ] **Phase 4 — Deployment packaging.** `docker-compose up` runs the full
+- [x] **Phase 4 — Deployment packaging.** `docker-compose up` runs the full
       stack; sanity-check touch usability at kiosk scale.
 - [ ] **Phase 5 (later, separately scoped).** Weather widget, transit/train
       widget, layout persistence/customization, remote access, real hardware
