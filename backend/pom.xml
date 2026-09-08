@@ -121,6 +121,25 @@
             </configuration>
           </execution>
           <execution>
+            <!--
+              `npm run build` invokes `ng build` via package.json's build
+              script, and `ng` only resolves from node_modules/.bin/ng -
+              which doesn't exist until dependencies are installed. This
+              execution must run (and be declared, since same-phase
+              executions run in declaration order) before npm-build-frontend
+              below. `npm ci` (not `npm install`) for a reproducible install
+              straight from package-lock.json, matching frontend-ci.yml.
+            -->
+            <id>npm-install-frontend</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <arguments>ci</arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>npm-build-frontend</id>
             <phase>prepare-package</phase>
             <goals>
