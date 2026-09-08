@@ -58,6 +58,97 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+
+      <!--
+        Frontend bundling (Phase 4 Ticket 1): run `npm run build` (ng build)
+        against the Angular app in ../frontend, then copy its compiled output
+        onto this jar's classpath under static/, so Spring Boot's default
+        static-resource handling serves index.html and the JS/CSS bundles.
+
+        NOTE ON TOOLING: docs/phase-4-plan.md's design decisions named
+        `frontend-maven-plugin` (com.github.eirslett) as the intended tool,
+        specifically configured to use this container's system-installed
+        Node/npm rather than downloading its own (the firewall here blocks
+        nodejs.org, frontend-maven-plugin's default download source).
+
+        That was investigated first and abandoned: frontend-maven-plugin's
+        `npm`/`node` goals (checked via the plugin descriptors of the latest
+        1.x and 2.x releases on Maven Central, 1.15.4 and 2.0.2 - neither
+        exposes an `npmExecutable`/`nodeExecutable` parameter) always resolve
+        node/npm from a `<installDirectory>/node/node` layout that only its
+        own `install-node-and-npm` goal produces, and that goal always
+        downloads a pinned Node build (its `nodeVersion` parameter is
+        required, with no "use whatever is on PATH" sentinel value - the
+        `provided` value that exists only toggles npm-bundled-with-node vs.
+        a separate npm download, it does not skip the node download itself).
+        Reproduced live: pointing `installDirectory` at the system Node
+        install fails because frontend-maven-plugin looks for
+        `<installDirectory>/node/node`, not `<installDirectory>/bin/node`.
+        Manufacturing that exact private/undocumented layout with symlinks
+        does work, but pins this build to frontend-maven-plugin's internal
+        (not publicly documented) folder convention, which could silently
+        break on a future plugin version bump.
+
+        `exec-maven-plugin` (org.codehaus.mojo) is used instead: it just
+        runs the given executable via ProcessBuilder, so `npm` resolves
+        through the normal PATH lookup - the exact Node/npm already
+        confirmed on PATH in this container - with no bundled download
+        logic of its own and no reliance on undocumented internals.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.6.3</version>
+        <executions>
+          <execution>
+            <id>npm-build-frontend</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>npm</executable>
+              <workingDirectory>${project.basedir}/../frontend</workingDirectory>
+              <arguments>
+                <argument>run</argument>
+                <argument>build</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Copy the Angular build output onto the jar's classpath under static/.
+        Modern Angular CLI (application builder) writes ng build's output to
+        dist/frontend/browser/ (index.html, hashed JS/CSS, favicon), with
+        dist/frontend/ itself holding only build metadata
+        (3rdpartylicenses.txt, prerendered-routes.json) - confirmed by
+        running the build directly and inspecting the resulting tree, rather
+        than assuming the older dist/frontend/ convention.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>copy-frontend-static</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/../frontend/dist/frontend/browser</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
