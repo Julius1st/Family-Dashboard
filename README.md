@@ -54,9 +54,14 @@ docker-compose up --build
 
 - The first build takes several minutes (it runs the same Maven build that
   compiles the backend and bundles the Angular frontend into the jar,
-  including a one-time Node download); rebuilding after only changing
-  application source is faster thanks to Docker layer caching around
-  `backend/pom.xml` and `frontend/package.json`/`package-lock.json`.
+  including a one-time Node download). The Dockerfile's early layers cache
+  Maven Central dependency resolution (keyed off `backend/pom.xml` and
+  `frontend/package.json`/`package-lock.json`), but the build stage runs
+  `mvnw clean package` — the `clean` wipes the Node/npm install those
+  layers can't cache — so any real source change still re-downloads Node
+  and re-runs the full frontend build; a `docker build` after a code
+  change takes about as long as the first one in an environment with
+  similarly slow extraction.
 - Once you see Spring Boot's startup log line (`Started FamilyDashboardApplication...`),
   open [http://localhost:8080](http://localhost:8080) in a browser — that's
   the dashboard, served from the same container/port as the `/api/*` backend.
