@@ -65,54 +65,69 @@
         onto this jar's classpath under static/, so Spring Boot's default
         static-resource handling serves index.html and the JS/CSS bundles.
 
-        NOTE ON TOOLING: docs/phase-4-plan.md's design decisions named
-        `frontend-maven-plugin` (com.github.eirslett) as the intended tool,
-        specifically configured to use this container's system-installed
-        Node/npm rather than downloading its own (the firewall here blocks
-        nodejs.org, frontend-maven-plugin's default download source).
+        NOTE ON TOOLING HISTORY: this originally used `exec-maven-plugin`,
+        invoking whatever `npm` happened to be on PATH, because this
+        container's firewall was believed to block nodejs.org (the source
+        frontend-maven-plugin's `install-node-and-npm` goal downloads from).
+        That belief turned out to be wrong - nodejs.org is in fact reachable
+        here - so this now uses `frontend-maven-plugin`'s normal, fully
+        supported install-node-and-npm + npm goals, downloading a pinned
+        Node/npm rather than depending on whatever happens to be
+        preinstalled. That makes `./mvnw clean package` self-contained: it
+        no longer implicitly requires Node on PATH, which matters for
+        Ticket 2's Dockerfile build stage and any future CI job that builds
+        a release jar without Node preinstalled.
 
-        That was investigated first and abandoned: frontend-maven-plugin's
-        `npm`/`node` goals (checked via the plugin descriptors of the latest
-        1.x and 2.x releases on Maven Central, 1.15.4 and 2.0.2 - neither
-        exposes an `npmExecutable`/`nodeExecutable` parameter) always resolve
-        node/npm from a `<installDirectory>/node/node` layout that only its
-        own `install-node-and-npm` goal produces, and that goal always
-        downloads a pinned Node build (its `nodeVersion` parameter is
-        required, with no "use whatever is on PATH" sentinel value - the
-        `provided` value that exists only toggles npm-bundled-with-node vs.
-        a separate npm download, it does not skip the node download itself).
-        Reproduced live: pointing `installDirectory` at the system Node
-        install fails because frontend-maven-plugin looks for
-        `<installDirectory>/node/node`, not `<installDirectory>/bin/node`.
-        Manufacturing that exact private/undocumented layout with symlinks
-        does work, but pins this build to frontend-maven-plugin's internal
-        (not publicly documented) folder convention, which could silently
-        break on a future plugin version bump.
+        (The investigation into whether frontend-maven-plugin could be
+        pointed at an *existing* system Node install - decompiling its
+        `npm`/`node` goals across the latest 1.x and 2.x releases, 1.15.4
+        and 2.0.2 - found no supported way to do that: neither exposes an
+        `npmExecutable`/`nodeExecutable` override, and both goals only
+        resolve node/npm from the `<installDirectory>/node/node` layout
+        that only `install-node-and-npm`'s own download produces. That's
+        moot now that the plugin is allowed to actually download, but is
+        why this didn't use frontend-maven-plugin from the start.)
 
-        `exec-maven-plugin` (org.codehaus.mojo) is used instead: it just
-        runs the given executable via ProcessBuilder, so `npm` resolves
-        through the normal PATH lookup - the exact Node/npm already
-        confirmed on PATH in this container - with no bundled download
-        logic of its own and no reliance on undocumented internals.
+        1.15.4 (a mature, widely-used release already inspected in depth
+        above) is pinned here rather than the newer 2.0.x line, which
+        hasn't been exercised in this project.
+
+        Node version: v24.20.0, the latest Node 24 ("Krypton") LTS point
+        release as of this writing - satisfies both frontend-ci.yml's
+        Node 24.x pin (Phase 2 Ticket 2) and @angular/cli's own
+        engines.node range (^22.22.3 || ^24.15.0 || >=26.0.0). npmVersion
+        is set to `provided`, the plugin's own convention for "use the npm
+        bundled with the downloaded Node" (11.19.0 for this Node build)
+        rather than fetching npm separately.
       -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.6.3</version>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>1.15.4</version>
+        <configuration>
+          <workingDirectory>${project.basedir}/../frontend</workingDirectory>
+          <installDirectory>${project.build.directory}/frontend-toolchain</installDirectory>
+        </configuration>
         <executions>
+          <execution>
+            <id>install-node-and-npm</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <configuration>
+              <nodeVersion>v24.20.0</nodeVersion>
+              <npmVersion>provided</npmVersion>
+            </configuration>
+          </execution>
           <execution>
             <id>npm-build-frontend</id>
             <phase>prepare-package</phase>
             <goals>
-              <goal>exec</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
-              <executable>npm</executable>
-              <workingDirectory>${project.basedir}/../frontend</workingDirectory>
-              <arguments>
-                <argument>run</argument>
-                <argument>build</argument>
-              </arguments>
+              <arguments>run build</arguments>
             </configuration>
           </execution>
         </executions>
