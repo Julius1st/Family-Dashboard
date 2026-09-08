@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring Boot binds SPRING_DATASOURCE_URL onto spring.datasource.url
+      # via its standard relaxed environment-variable binding -- no
+      # application.yml or Java code change needed. This points the H2
+      # file database at an absolute path under the named volume mounted
+      # below, so data survives `docker-compose down` + `docker-compose up`
+      # (container recreation), not just container restarts.
+      SPRING_DATASOURCE_URL: jdbc:h2:file:/data/family-dashboard
+    volumes:
+      - family-dashboard-data:/data
+    restart: unless-stopped
+
+volumes:
+  family-dashboard-data:

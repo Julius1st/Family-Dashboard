@@ -1,0 +1,23 @@
+# Git / IDE
+.git/
+.github/
+.idea/
+.vscode/
+
+# Backend build output & runtime data (rebuilt/regenerated inside the image)
+backend/target/
+backend/data/
+
+# Frontend build output & deps (rebuilt inside the image every time)
+**/node_modules/
+frontend/node_modules_stale/
+frontend/dist/
+frontend/.angular/
+
+# Docs -- not needed inside the image
+docs/
+*.md
+
+# Misc
+.devcontainer/
+.dockerignore

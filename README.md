@@ -39,6 +39,34 @@ Both the backend and frontend can be run today (from the repo root):
 The Maven wrapper in `backend/` fetches Maven itself, so no local install is
 required.
 
+## Run with Docker
+
+The whole app (Angular frontend + Spring Boot backend + H2 database) ships as
+a single container, built from the repo-root `Dockerfile` and run via
+`docker-compose.yml`. This requires Docker on the host machine — it is **not**
+available inside this project's dev container/sandbox, so this section
+describes running the app elsewhere (e.g. your own machine or a home server),
+not something exercised as part of development here.
+
+```bash
+docker-compose up --build
+```
+
+- The first build takes several minutes (it runs the same Maven build that
+  compiles the backend and bundles the Angular frontend into the jar,
+  including a one-time Node download); rebuilding after only changing
+  application source is faster thanks to Docker layer caching around
+  `backend/pom.xml` and `frontend/package.json`/`package-lock.json`.
+- Once you see Spring Boot's startup log line (`Started FamilyDashboardApplication...`),
+  open [http://localhost:8080](http://localhost:8080) in a browser — that's
+  the dashboard, served from the same container/port as the `/api/*` backend.
+- Data lives in the `family-dashboard-data` named volume, mounted at `/data`
+  inside the container (via the `SPRING_DATASOURCE_URL` environment
+  variable). It persists across `docker-compose down` followed by
+  `docker-compose up` — only `docker-compose down -v` (which removes named
+  volumes) or manually deleting the volume clears it.
+- Stop the app with `docker-compose down`.
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
