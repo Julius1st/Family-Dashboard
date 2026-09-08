@@ -102,7 +102,7 @@
         <executions>
           <execution>
             <id>npm-build-frontend</id>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>exec</goal>
             </goals>
@@ -134,7 +134,7 @@
         <executions>
           <execution>
             <id>copy-frontend-static</id>
-            <phase>process-resources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
