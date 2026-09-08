@@ -4,7 +4,14 @@
   <meta charset="utf-8">
   <title>Frontend</title>
   <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--
+    This dashboard runs on a single-purpose, wall-mounted kiosk touchscreen
+    that the household controls (see CLAUDE.md / docs/PLAN.md) — it is not
+    a public page subject to normal web-accessibility zoom expectations.
+    Disabling pinch/double-tap zoom here is a deliberate kiosk-UX choice,
+    not a default we'd apply to a general-purpose site.
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>

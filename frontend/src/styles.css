@@ -1,1 +1,41 @@
 /* You can add global styles to this file, and also import other style files */
+
+/*
+ * Kiosk/touch usability pass (Phase 4, Ticket 3).
+ *
+ * This app runs full-screen on a single-purpose, wall-mounted touchscreen
+ * (see CLAUDE.md), so a few browser defaults that make sense on a general
+ * web page actively hurt here: accidental text-selection callouts when a
+ * finger lingers on a button, rubber-band/pull-to-refresh bounce that
+ * feels broken on a fixed kiosk screen, and default body margins leaving
+ * a sliver of un-styled background at the viewport edge.
+ */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  /* Belt-and-braces alongside the disabled pinch-zoom in index.html's
+     viewport meta tag: stop rubber-band bounce / pull-to-refresh so the
+     kiosk screen never scrolls or "gives" at its edges. */
+  overscroll-behavior: none;
+}
+
+/*
+ * Buttons and other interactive controls: prevent the OS text-selection
+ * "callout" bubble (copy/lookup menu) and selection highlight that a
+ * long or slightly-off tap can otherwise trigger — that's just visual
+ * noise on a touch control, never something a user wants to select here.
+ * Deliberately scoped to controls, not applied globally: real text
+ * content (e.g. the todo-item add input) must stay normally selectable.
+ */
+button,
+[role='checkbox'],
+[role='button'] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Removes the ~300ms tap delay / double-tap-zoom gesture on controls
+     without touching normal scrolling elsewhere. */
+  touch-action: manipulation;
+}
