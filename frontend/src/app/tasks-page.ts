@@ -1,5 +1,6 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, viewChild } from '@angular/core';
 
+import { AddTaskDialog } from './add-task-dialog';
 import { memberColor } from './member-color';
 import { TodoItem } from './todo-item';
 import { TodoService } from './todo.service';
@@ -42,18 +43,20 @@ interface MemberColumn {
  * data for the mock's own hardcoded array, not something the real API
  * returns, so there is nothing to render for it here.
  *
- * The add-task button is a real, styled, ≥44px control per member —
- * wiring its click to actually open the "Neue Aufgabe" dialog is
- * Ticket 4's job, not this one's, so `onAddTask` is intentionally a
- * no-op for now.
+ * The add-task button is a real, styled, ≥44px control per member,
+ * opening a single shared `AddTaskDialog` instance (Ticket 4) scoped to
+ * whichever member's button was tapped — no member picker needed, since
+ * the button already carries the member identity.
  */
 @Component({
   selector: 'app-tasks-page',
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.css',
+  imports: [AddTaskDialog],
 })
 export class TasksPage {
   private readonly todoService = inject(TodoService);
+  private readonly addTaskDialog = viewChild.required(AddTaskDialog);
 
   protected readonly members = this.todoService.members;
   protected readonly items = this.todoService.items;
@@ -90,11 +93,11 @@ export class TasksPage {
   }
 
   /**
-   * No-op for this ticket. Ticket 4 wires this to open the "Neue
-   * Aufgabe" dialog scoped to `member` (no member picker needed, per the
-   * handoff — the button already carries the member identity).
+   * Opens the shared `AddTaskDialog` instance scoped to `member` (design
+   * handoff, "Add task": no member picker needed, since the button
+   * already carries the member identity).
    */
   protected onAddTask(member: string): void {
-    void member;
+    this.addTaskDialog().open(member);
   }
 }

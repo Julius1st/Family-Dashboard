@@ -1,0 +1,128 @@
+/*
+ * Host renders nothing of its own — the native `<dialog>` is the only box
+ * that should exist in the layout (it's `display: none` per the UA
+ * stylesheet while closed, and taken out of normal flow into the top
+ * layer while open via `showModal()`), so this component must not add an
+ * inline wrapper box around it inside `TasksPage`'s flex column.
+ */
+:host {
+  display: contents;
+}
+
+/*
+ * The design handoff never specifies this dialog's own chrome (Screen 1,
+ * "Interactions & behavior": "state not designed"). No padding/background
+ * on the `<dialog>` box itself — `.add-task-dialog__panel` inside carries
+ * all the visible surface styling instead, which is also what makes the
+ * "click outside the panel closes it" trick in add-task-dialog.ts work:
+ * a click anywhere in the dialog's own box that isn't the panel targets
+ * the `<dialog>` element itself.
+ */
+.add-task-dialog {
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: min(420px, calc(100vw - 48px));
+  width: 100%;
+}
+
+/* Not a handoff value (this interaction was left undesigned) — dims the
+   page using the existing bg/page token rather than a generic black, so
+   the backdrop stays in the same neutral hue family as the rest of the
+   UI. */
+.add-task-dialog::backdrop {
+  background: color-mix(in oklch, var(--bg-page) 70%, transparent);
+}
+
+/* Same card language as every widget on both screens: bg/surface,
+   border/widget, radius/widget (handoff, Screen 1 item 4 / Screen 2). */
+.add-task-dialog__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-widget);
+  border-radius: var(--radius-widget);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.add-task-dialog__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: var(--ink-primary);
+}
+
+/* Matches the "widget eyebrow" typographic role from the handoff's type
+   scale (mono 13/500, uppercase, 0.18em) — the closest existing role to
+   a small field label. */
+.add-task-dialog__label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Matches the "task text" role (sans 19/500) since this input holds the
+   same kind of content a task row displays once created. */
+.add-task-dialog__input {
+  appearance: none;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--border-control);
+  border-radius: 8px;
+  background: var(--bg-inset);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 19px;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+
+.add-task-dialog__input::placeholder {
+  color: var(--ink-muted);
+}
+
+.add-task-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* >=44px touch baseline (CLAUDE.md) applies to the dialog's own buttons
+   too — 48px here, same discipline as the add-task/nav controls
+   elsewhere in this app. */
+.add-task-dialog__cancel,
+.add-task-dialog__submit {
+  appearance: none;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.add-task-dialog__cancel {
+  border: 1px solid var(--border-control);
+  background: transparent;
+  color: var(--ink-secondary);
+}
+
+/* Filled, same treatment as the active nav pill item, to read as the
+   primary action next to the outline-style cancel button. */
+.add-task-dialog__submit {
+  border: 1px solid transparent;
+  background: var(--ink-primary);
+  color: var(--ink-on-accent);
+}

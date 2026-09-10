@@ -166,7 +166,7 @@ describe('TasksPage', () => {
     },
   );
 
-  it('renders a real, clickable, >=44px add-task control per member without throwing', async () => {
+  it('renders a real, clickable, >=44px add-task control per member', async () => {
     configureWith(['Alice', 'Bob'], []);
 
     const fixture = await createFixture();
@@ -175,11 +175,52 @@ describe('TasksPage', () => {
     expect(addButtons.length).toBe(2);
     expect(addButtons[0].textContent).toContain('Neue Aufgabe');
 
-    expect(() => addButtons[0].click()).not.toThrow();
-
     for (const button of addButtons) {
       expect(getComputedStyle(button).minHeight).toBe('52px');
     }
+  });
+
+  it("tapping a column's add-task button opens the add-task dialog scoped to that member, not another", async () => {
+    configureWith(['Alice', 'Bob'], []);
+
+    const fixture = await createFixture();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const addButtons = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.tasks-page__add-button'));
+
+    addButtons[1].click();
+    await fixture.whenStable();
+
+    const dialog = compiled.querySelector('dialog') as HTMLDialogElement;
+    expect(dialog.open).toBe(true);
+    expect(dialog.textContent).toContain('Bob');
+    expect(dialog.textContent).not.toContain('Alice');
+  });
+
+  it('creating a task via the dialog appends it to that member’s column without a manual refresh', async () => {
+    const fake = configureWith(['Alice', 'Bob'], [{ id: 1, householdMember: 'Alice', description: 'Buy milk', done: false }]);
+    fake.create = vi.fn((member: string, description: string) => {
+      const items = fake.items() ?? [];
+      fake.items.set([...items, { id: 99, householdMember: member, description, done: false }]);
+    });
+
+    const fixture = await createFixture();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const addButtons = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.tasks-page__add-button'));
+
+    addButtons[1].click();
+    await fixture.whenStable();
+
+    const dialog = compiled.querySelector('dialog') as HTMLDialogElement;
+    const input = dialog.querySelector('input') as HTMLInputElement;
+    input.value = 'Rasen mähen';
+    (dialog.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    expect(dialog.open).toBe(false);
+    const bobColumn = Array.from(compiled.querySelectorAll<HTMLElement>('.tasks-page__column')).find((column) =>
+      column.textContent?.includes('Bob'),
+    );
+    expect(bobColumn?.textContent).toContain('Rasen mähen');
   });
 
   it('meets the >=44px touch target baseline for task rows', async () => {

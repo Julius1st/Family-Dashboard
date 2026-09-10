@@ -1,0 +1,21 @@
+<dialog #dialog class="add-task-dialog" (click)="onDialogClick($event)" (close)="onClose()">
+  <form class="add-task-dialog__panel" (submit)="submit($event)">
+    <h2 class="add-task-dialog__title">Neue Aufgabe für {{ member() }}</h2>
+
+    <label class="add-task-dialog__label" for="add-task-description">Beschreibung</label>
+    <input
+      #descriptionInput
+      id="add-task-description"
+      type="text"
+      class="add-task-dialog__input"
+      name="description"
+      placeholder="Was ist zu tun?"
+      autocomplete="off"
+    />
+
+    <div class="add-task-dialog__actions">
+      <button type="button" class="add-task-dialog__cancel" (click)="cancel()">Abbrechen</button>
+      <button type="submit" class="add-task-dialog__submit">Hinzufügen</button>
+    </div>
+  </form>
+</dialog>
