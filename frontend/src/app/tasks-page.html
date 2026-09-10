@@ -1,6 +1,75 @@
 <section class="tasks-page">
   <div class="tasks-page__card">
-    <p class="tasks-page__eyebrow">AUFGABEN</p>
-    <p class="tasks-page__title">Das Aufgabenboard folgt in Kürze.</p>
+    <header class="tasks-page__header">
+      <p class="tasks-page__eyebrow">AUFGABEN</p>
+      <h2 class="tasks-page__title">Haushalt</h2>
+      <p class="tasks-page__done-line">{{ doneCount() }} von {{ totalCount() }} erledigt</p>
+    </header>
+
+    <div class="tasks-page__rule"></div>
+
+    @if (members(); as memberList) {
+      @if (items()) {
+        @if (memberList.length === 0) {
+          <p class="tasks-page__empty">Keine Haushaltsmitglieder konfiguriert.</p>
+        } @else {
+          <div class="tasks-page__columns">
+            @for (column of columns(); track column.member) {
+              <section class="tasks-page__column" [style.--member-color]="column.color">
+                <div class="tasks-page__name-row">
+                  <span class="tasks-page__dot" aria-hidden="true"></span>
+                  <span class="tasks-page__member-name">{{ column.member }}</span>
+                  <span class="tasks-page__member-counter">{{ column.doneCount }}/{{ column.totalCount }}</span>
+                </div>
+
+                <div class="tasks-page__progress-track">
+                  <div class="tasks-page__progress-fill" [style.width.%]="column.progress * 100"></div>
+                </div>
+
+                @if (column.items.length === 0) {
+                  <p class="tasks-page__column-empty">Keine Aufgaben.</p>
+                } @else {
+                  <ul class="tasks-page__list">
+                    @for (item of column.items; track item.id) {
+                      <li>
+                        <button
+                          type="button"
+                          class="tasks-page__row"
+                          role="checkbox"
+                          [attr.aria-checked]="item.done"
+                          (click)="onToggle(item)"
+                        >
+                          <span
+                            class="tasks-page__checkbox"
+                            [class.tasks-page__checkbox--done]="item.done"
+                            aria-hidden="true"
+                          >
+                            @if (item.done) {
+                              <span class="tasks-page__checkmark">✓</span>
+                            }
+                          </span>
+                          <span class="tasks-page__task-text" [class.tasks-page__task-text--done]="item.done">
+                            {{ item.description }}
+                          </span>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+
+                <button type="button" class="tasks-page__add-button" (click)="onAddTask(column.member)">
+                  <span class="tasks-page__add-plus" aria-hidden="true">+</span>
+                  <span class="tasks-page__add-label">Neue Aufgabe</span>
+                </button>
+              </section>
+            }
+          </div>
+        }
+      } @else {
+        <p class="tasks-page__loading">Aufgaben werden geladen…</p>
+      }
+    } @else {
+      <p class="tasks-page__loading">Aufgaben werden geladen…</p>
+    }
   </div>
 </section>

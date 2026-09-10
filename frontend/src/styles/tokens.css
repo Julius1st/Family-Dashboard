@@ -24,6 +24,12 @@
   --bg-surface: oklch(0.205 0.014 265);
   --bg-inset: oklch(0.26 0.016 265);
   --bg-inset-hi: oklch(0.3 0.018 265);
+  /* Add-task button hover fill (Ticket 3 — Screen 1 item 5, "Add-task
+     button... Hover: background oklch(0.25 0.016 265)"). Only ever given
+     inline in the per-screen prose, not the main token table — the same
+     "not every value is in the table" case Ticket 2 hit for
+     `--ink-nav-inactive`. */
+  --bg-control-hover: oklch(0.25 0.016 265);
 
   /* Borders */
   --border-widget: oklch(0.28 0.016 265);
