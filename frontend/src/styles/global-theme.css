@@ -1,0 +1,22 @@
+/*
+ * Global dark theme (Ticket 1 — design foundation).
+ *
+ * This kiosk app is dark at all hours by design (see the handoff) — apply
+ * the page background and default text color tokens globally here, so
+ * every future page/component inherits them instead of each one having to
+ * set its own background. `--font-sans` is the default body font; widgets
+ * built in later tickets opt into `--font-mono` for numeric/label text
+ * per the type scale.
+ *
+ * Kept in its own file (no @font-face/url() references here) so a spec
+ * can mount a component with `styleUrls: ['./tokens.css',
+ * './global-theme.css']` to assert the tokens are actually wired,
+ * without the test bundler trying to resolve font asset urls at build
+ * time — see styles/global-theme.spec.ts.
+ */
+html,
+body {
+  background: var(--bg-page);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+}
