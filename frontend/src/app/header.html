@@ -1,0 +1,27 @@
+<header class="header">
+  <div class="header__left">
+    <span class="header__clock">{{ time() }}</span>
+    <span class="header__date">{{ date() }}</span>
+  </div>
+
+  <nav class="header__nav" aria-label="Seiten">
+    <button
+      type="button"
+      class="header__nav-item"
+      [class.header__nav-item--active]="isActive('tasks')"
+      [attr.aria-current]="isActive('tasks') ? 'page' : null"
+      (click)="select('tasks')"
+    >
+      Aufgaben
+    </button>
+    <button
+      type="button"
+      class="header__nav-item"
+      [class.header__nav-item--active]="isActive('transit')"
+      [attr.aria-current]="isActive('transit') ? 'page' : null"
+      (click)="select('transit')"
+    >
+      Abfahrten & Wetter
+    </button>
+  </nav>
+</header>

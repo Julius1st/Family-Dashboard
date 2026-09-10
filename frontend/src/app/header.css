@@ -1,0 +1,75 @@
+:host {
+  display: block;
+  flex: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 26px var(--space-page-x);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-header);
+  box-sizing: border-box;
+}
+
+.header__left {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  min-width: 0;
+}
+
+.header__clock {
+  font-family: var(--font-mono);
+  font-size: 58px;
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  color: var(--ink-primary);
+  white-space: nowrap;
+}
+
+.header__date {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.header__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-pill);
+  flex: none;
+}
+
+/* No hover states except the add-task button (Ticket 3) — the handoff is
+   explicit that this is a touch panel, so the nav pill relies on the
+   filled/transparent contrast below, not a hover affordance. */
+.header__nav-item {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 13px 26px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  background: transparent;
+  color: var(--ink-nav-inactive);
+}
+
+.header__nav-item--active {
+  background: var(--ink-primary);
+  color: var(--ink-on-accent);
+}

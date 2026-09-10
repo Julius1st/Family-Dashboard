@@ -1,18 +1,25 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { App } from './app';
-import { WidgetService } from './widget.service';
+import { PageNavigationService } from './page-navigation.service';
 
 describe('App', () => {
   beforeEach(async () => {
-    // App mounts DashboardShell, which depends on WidgetService. Stub it
-    // out here so this smoke test doesn't make a real HTTP call (and
-    // doesn't leave a pending request that would block `whenStable()`).
+    // The header renders a live clock; fake `Date`/interval timers keep
+    // this smoke test from depending on real wall-clock time, while
+    // leaving `setTimeout`/microtasks real so Angular's zoneless scheduler
+    // can still resolve `fixture.whenStable()`.
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    vi.setSystemTime(new Date('2026-09-10T07:42:00'));
+
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [{ provide: WidgetService, useValue: { widgets: signal([]) } }],
-    })
-      .compileComponents();
+    }).compileComponents();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should create the app', () => {
@@ -21,10 +28,25 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('mounts the header and the tasks page by default', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, frontend');
+
+    expect(compiled.querySelector('app-header')).toBeTruthy();
+    expect(compiled.querySelector('app-tasks-page')).toBeTruthy();
+    expect(compiled.querySelector('app-transit-weather-page')).toBeFalsy();
+  });
+
+  it('switches to the transit-weather page when the nav service selects it', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+
+    TestBed.inject(PageNavigationService).select('transit');
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-transit-weather-page')).toBeTruthy();
+    expect(compiled.querySelector('app-tasks-page')).toBeFalsy();
   });
 });

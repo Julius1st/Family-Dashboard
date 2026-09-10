@@ -1,0 +1,74 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/*
+ * Handoff's Screen 2 body grid is `minmax(0,1fr) 452px` (departures fills
+ * remaining width, weather is a fixed 452px column) — kept above the
+ * responsive breakpoint below since it's still a landscape, tablet-and-up
+ * kiosk display, per the redesign plan's "adaptive, not phone-width
+ * responsive" decision. Below that width the two slots stack instead of
+ * clipping/overflowing.
+ */
+.transit-weather-page {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) 452px;
+  gap: 20px;
+  padding: var(--space-page-y) var(--space-page-x);
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .transit-weather-page {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Widget-card visual language shared with the Screen 1 tasks widget:
+   bg/surface, border/widget, radius/widget. */
+.transit-weather-page__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-widget);
+  border-radius: var(--radius-widget);
+  padding: 24px 26px 22px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.transit-weather-page__eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.transit-weather-page__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+
+.transit-weather-page__note {
+  margin: 0;
+  max-width: 40ch;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink-secondary);
+}

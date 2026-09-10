@@ -1,0 +1,49 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tasks-page {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--space-page-y) var(--space-page-x);
+  box-sizing: border-box;
+}
+
+/* Widget-card visual language shared with the Screen 1 tasks widget and
+   Screen 2's placeholder slots: bg/surface, border/widget, radius/widget. */
+.tasks-page__card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-widget);
+  border-radius: var(--radius-widget);
+  padding: 18px 26px 22px;
+  box-sizing: border-box;
+}
+
+.tasks-page__eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.tasks-page__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  text-align: center;
+}

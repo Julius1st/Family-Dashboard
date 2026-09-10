@@ -1,0 +1,10 @@
+/*
+ * App shell layout (Ticket 2): a column flex filling the viewport height —
+ * the header band (`flex: none`, see header.css) on top, whichever page
+ * is active filling the rest.
+ */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
