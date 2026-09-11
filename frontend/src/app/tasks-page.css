@@ -93,11 +93,25 @@
  * of assuming 4, per the redesign plan's adaptive-layout decision. With
  * `align-items: stretch`, every column matches the tallest column's
  * height so each column's add-task button lands on a shared baseline.
+ *
+ * `flex: 1 1 auto` is required here because this grid is itself a flex
+ * item of `.tasks-page__card` (`display: flex; flex-direction: column`).
+ * Without it, a flex item only takes its own content height, so on a
+ * card taller than the columns' natural content (e.g. the page stretched
+ * to fill the viewport), the grid — and therefore every `margin-top:
+ * auto`-pinned add-task button inside it — would sit above empty space
+ * rather than reaching the card's true bottom edge. `min-height: 0`
+ * overrides the flex item's default `min-height: auto`, which would
+ * otherwise let the grid's content refuse to shrink below its natural
+ * height and push past the card's bounds instead of stretching/scrolling
+ * correctly within it.
  */
 .tasks-page__columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
   margin: 0 -22px;
 }
 
