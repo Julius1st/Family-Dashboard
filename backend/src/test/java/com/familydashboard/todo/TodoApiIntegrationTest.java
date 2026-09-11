@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,39 @@ class TodoApiIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private TodoItemRepository todoItemRepository;
+
+    @Test
+    void gettingTodosDeletesDoneAndOverdueItemsAndExcludesThemFromTheResponse() throws Exception {
+        TodoItem doneAndOverdue = new TodoItem("Alice", "Long done, should be swept up");
+        doneAndOverdue.setDone(true);
+        doneAndOverdue.setDueDate(LocalDate.of(2020, 1, 1));
+        Long overdueId = todoItemRepository.save(doneAndOverdue).getId();
+
+        MvcResult listResult = mockMvc.perform(get("/api/todos"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(readDtoList(listResult)).extracting(TodoItemDto::id).doesNotContain(overdueId);
+        assertThat(todoItemRepository.existsById(overdueId)).isFalse();
+    }
+
+    @Test
+    void creatingATodoViaTheApiSetsItsDueDateToToday() throws Exception {
+        MvcResult createResult = mockMvc.perform(post("/api/todos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"householdMember": "Alice", "description": "Buy milk"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+        TodoItemDto created = readDto(createResult);
+
+        TodoItem persisted = todoItemRepository.findById(created.id()).orElseThrow();
+        assertThat(persisted.getDueDate()).isEqualTo(LocalDate.now());
+    }
 
     @Test
     void createListReplaceAndDeleteRoundTripAgainstTheRealDatabase() throws Exception {
