@@ -13,10 +13,18 @@ describe('Header', () => {
     // resolve `fixture.whenStable()`.
     vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
     vi.setSystemTime(new Date('2026-09-10T07:42:00'));
+    // ThemeService persists to real jsdom localStorage on every change
+    // (see its constructor `effect()`); without clearing it here, a theme
+    // change made by one test (e.g. clicking the light icon) leaks into
+    // the next test's fresh ThemeService instance via `readStoredTheme()`,
+    // silently changing which theme it starts in. Matches the convention
+    // already used in theme.service.spec.ts.
+    localStorage.clear();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    localStorage.clear();
   });
 
   it('renders the clock (mono, no seconds) and the German date', async () => {
