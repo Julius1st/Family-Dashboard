@@ -4,24 +4,31 @@
     <span class="header__date">{{ date() }}</span>
   </div>
 
-  <nav class="header__nav" aria-label="Seiten">
-    <button
-      type="button"
-      class="header__nav-item"
-      [class.header__nav-item--active]="isActive('tasks')"
-      [attr.aria-current]="isActive('tasks') ? 'page' : null"
-      (click)="select('tasks')"
-    >
-      Aufgaben
+  <div class="header__right">
+    <nav class="header__nav" aria-label="Seiten">
+      <button
+        type="button"
+        class="header__nav-item"
+        [class.header__nav-item--active]="isActive('tasks')"
+        [attr.aria-current]="isActive('tasks') ? 'page' : null"
+        (click)="select('tasks')"
+      >
+        Aufgaben
+      </button>
+      <button
+        type="button"
+        class="header__nav-item"
+        [class.header__nav-item--active]="isActive('transit')"
+        [attr.aria-current]="isActive('transit') ? 'page' : null"
+        (click)="select('transit')"
+      >
+        Abfahrten & Wetter
+      </button>
+    </nav>
+
+    <button type="button" class="header__theme-toggle" (click)="toggleTheme()">
+      <span class="header__theme-toggle-icon" aria-hidden="true">{{ theme() === 'dark' ? '☀️' : '🌙' }}</span>
+      <span class="header__theme-toggle-label">{{ themeToggleLabel() }}</span>
     </button>
-    <button
-      type="button"
-      class="header__nav-item"
-      [class.header__nav-item--active]="isActive('transit')"
-      [attr.aria-current]="isActive('transit') ? 'page' : null"
-      (click)="select('transit')"
-    >
-      Abfahrten & Wetter
-    </button>
-  </nav>
+  </div>
 </header>

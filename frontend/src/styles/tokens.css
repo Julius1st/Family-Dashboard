@@ -1,5 +1,5 @@
 /*
- * Design tokens (Ticket 1 — design foundation).
+ * Design tokens (Ticket 1 — design foundation; light mode added later).
  *
  * Values transcribed from the design handoff's token table:
  * docs/design_handoff_family_dashboard/README.md ("Design tokens" /
@@ -16,6 +16,15 @@
  * not-yet-built component (e.g. checkbox radius, line-badge radius,
  * member column padding) are deliberately left for the ticket that builds
  * that component, so nothing is declared before something consumes it.
+ *
+ * Light mode: the design handoff only ever specifies "dark at all hours"
+ * and defines no light palette, so `:root` (below) stays the DEFAULT and
+ * is exactly today's dark-only look, unchanged, for anyone who never
+ * touches the header's theme toggle. `:root[data-theme="light"]`
+ * (further down) redefines every COLOR token for light mode — the
+ * font/radius/spacing tokens are theme-agnostic structural values and are
+ * deliberately not duplicated there. `ThemeService` is what sets
+ * `data-theme` on `document.documentElement`.
  */
 
 :root {
@@ -48,6 +57,16 @@
      from ink/secondary and ink/muted in the handoff's own token table, so
      it gets its own name rather than reusing either. */
   --ink-nav-inactive: oklch(0.72 0.01 265);
+  /* Active nav-pill *text* color (light mode). Distinct from
+     `--ink-on-accent` on purpose: the active pill's fill is
+     `--ink-primary`, which flips from near-white (dark mode) to
+     near-black (light mode) — so the text riding on top of it needs its
+     own token rather than sharing one with the theme-invariant
+     `.tasks-page__checkmark` use of `--ink-on-accent` (that one sits on a
+     fixed-lightness member color in both themes and doesn't need to
+     change). Same value as `--ink-on-accent` here so dark mode is
+     pixel-identical to before this token existed. */
+  --ink-on-pill-active: oklch(0.19 0.012 265);
 
   /* Status */
   --status-late: oklch(0.8 0.14 75);
@@ -75,4 +94,48 @@
   --radius-pill: 999px;
   --space-page-x: 36px;
   --space-page-y: 30px;
+}
+
+/*
+ * Light mode palette. Manual toggle only (see `ThemeService`) — never
+ * OS-preference or time-of-day driven. Every color token above is
+ * redefined here with ONE deliberate exception: `--ink-on-accent` is
+ * genuinely theme-invariant (it colors `.tasks-page__checkmark`, which
+ * sits on top of a fixed-lightness member color that itself doesn't
+ * change between themes — see `member-color.ts`) and so is intentionally
+ * absent from this block, leaving it resolve to its single `:root`
+ * definition regardless of `data-theme`. Do not add it here.
+ */
+:root[data-theme='light'] {
+  /* Backgrounds */
+  --bg-page: oklch(0.95 0.006 265);
+  --bg-surface: oklch(0.99 0.003 265);
+  --bg-inset: oklch(0.91 0.008 265);
+  --bg-inset-hi: oklch(0.87 0.01 265);
+  --bg-control-hover: oklch(0.89 0.008 265);
+
+  /* Borders */
+  --border-widget: oklch(0.83 0.01 265);
+  --border-header: oklch(0.78 0.012 265);
+  --border-hairline: oklch(0.87 0.008 265);
+  --border-control: oklch(0.72 0.014 265);
+  --border-checkbox: oklch(0.6 0.018 265);
+
+  /* Ink (text) */
+  --ink-primary: oklch(0.22 0.01 265);
+  --ink-secondary: oklch(0.4 0.012 265);
+  --ink-muted: oklch(0.52 0.012 265);
+  --ink-done: oklch(0.68 0.012 265);
+  --ink-nav-inactive: oklch(0.48 0.01 265);
+  /* `--ink-on-accent` is intentionally NOT redefined here — see the file
+     comment above and the block comment on its `:root` definition. */
+  --ink-on-pill-active: oklch(0.98 0.005 265);
+
+  /* Status */
+  --status-late: oklch(0.55 0.16 75);
+  --status-cancelled: oklch(0.52 0.19 25);
+
+  /* Accent */
+  --accent-rain: oklch(0.55 0.14 235);
+  --accent-rain-low: oklch(0.62 0.02 265);
 }
