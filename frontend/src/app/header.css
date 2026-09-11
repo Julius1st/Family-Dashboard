@@ -84,24 +84,30 @@
 /*
  * Manual light/dark theme toggle (ThemeService). A single icon-only button
  * — deliberately not the two-stacked-button pill this went through in an
- * earlier revision, which grew taller than the header's other content; a
- * single 44x44px button keeps the same footprint as one `.header__nav-item`
- * and can't grow the header's height. Still the same pill visual language
- * as `.header__nav` (`--bg-inset` well, `--radius-pill` shape). Shows one
- * hand-drawn, stroke-based, `currentColor` SVG at a time (this app's design
- * handoff otherwise uses no icons anywhere) rather than an icon font/library
- * (no such dependency exists in this project) — `currentColor` is what lets
- * it pick up `--ink-primary` via the `color` property below rather than a
- * hardcoded fill. No hover state, for the same touch-panel reasoning as the
- * nav pill above.
+ * earlier revision, which grew taller than the header's other content.
+ * Still the same pill visual language as `.header__nav` (`--bg-inset` well,
+ * `--radius-pill` shape). Shows one hand-drawn, stroke-based, `currentColor`
+ * SVG at a time (this app's design handoff otherwise uses no icons
+ * anywhere) rather than an icon font/library (no such dependency exists in
+ * this project) — `currentColor` is what lets it pick up `--ink-primary`
+ * via the `color` property below rather than a hardcoded fill. No hover
+ * state, for the same touch-panel reasoning as the nav pill above.
+ *
+ * 54px, not 44px: `.header__nav`'s own rendered footprint is
+ * `.header__nav-item`'s 44px `min-height` plus its container's 5px+5px
+ * padding = 54px, not 44px — so a flat 44px toggle sits visibly *smaller*
+ * than the nav pill beside it. Matching 54px here makes the two controls
+ * footprint-equal without growing the header past a size it already has
+ * (the nav pill already governs `.header__right`'s height at 54px), and
+ * stays comfortably above the 44px touch-target minimum.
  */
 .header__theme-toggle {
   appearance: none;
   border: none;
   cursor: pointer;
   box-sizing: border-box;
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 54px;
+  min-width: 54px;
   display: flex;
   align-items: center;
   justify-content: center;

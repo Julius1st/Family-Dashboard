@@ -127,7 +127,7 @@ describe('Header', () => {
     expect(color).not.toContain('var(--ink-on-accent)');
   });
 
-  it('renders a single >=44x44px icon-only theme toggle button, with no text label', async () => {
+  it('renders a single icon-only theme toggle button (>=44px touch minimum), with no text label', async () => {
     TestBed.configureTestingModule({ imports: [Header] });
     const fixture = TestBed.createComponent(Header);
     await fixture.whenStable();
@@ -138,9 +138,41 @@ describe('Header', () => {
     expect(toggle!.textContent?.trim()).toBe('');
     expect(toggle!.querySelectorAll('svg')).toHaveLength(1);
 
+    // 54px, not just the 44px minimum — see the footprint-equality test
+    // below for why: it matches the nav pill's own true rendered size.
     const style = getComputedStyle(toggle!);
-    expect(style.minHeight).toBe('44px');
-    expect(style.minWidth).toBe('44px');
+    expect(style.minHeight).toBe('54px');
+    expect(style.minWidth).toBe('54px');
+  });
+
+  it('the theme toggle is footprint-equal to the nav pill: 44px item + 5px+5px container padding = 54px', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+
+    // jsdom doesn't perform real layout, so this can't measure actual
+    // rendered pixels the way a browser would. What it CAN do is read back
+    // each side's computed CSS declarations and add them up algebraically —
+    // proving the two controls are sized to the same total footprint by
+    // construction, which is the strongest check available without a real
+    // browser to visually compare them in.
+    const compiled = fixture.nativeElement as HTMLElement;
+    const nav = compiled.querySelector<HTMLElement>('.header__nav');
+    const navItem = compiled.querySelector<HTMLButtonElement>('.header__nav-item');
+    const toggle = compiled.querySelector<HTMLButtonElement>('.header__theme-toggle');
+    expect(nav).not.toBeNull();
+    expect(navItem).not.toBeNull();
+    expect(toggle).not.toBeNull();
+
+    const navStyle = getComputedStyle(nav!);
+    expect(navStyle.paddingTop).toBe('5px');
+    expect(navStyle.paddingBottom).toBe('5px');
+    expect(getComputedStyle(navItem!).minHeight).toBe('44px');
+
+    const navPillTotalHeight = 44 + 5 + 5;
+    const toggleStyle = getComputedStyle(toggle!);
+    expect(toggleStyle.minHeight).toBe(`${navPillTotalHeight}px`);
+    expect(toggleStyle.minWidth).toBe(`${navPillTotalHeight}px`);
   });
 
   it('shows the sun icon (tap-for-bright) while the default dark theme is active', async () => {
