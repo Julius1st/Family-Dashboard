@@ -17,7 +17,11 @@ interface MemberColumn {
   readonly items: readonly TodoItem[];
   readonly doneCount: number;
   readonly totalCount: number;
-  /** Fraction of `items` that are done, in `[0, 1]`; `0` when `totalCount` is `0`. */
+  /**
+   * Fraction of `items` that are done, in `[0, 1]`; `1` (a full bar) when
+   * `totalCount` is `0` — nothing outstanding reads visually as fully
+   * "done," not as 0% progress on nothing.
+   */
   readonly progress: number;
 }
 
@@ -82,7 +86,7 @@ export class TasksPage {
         items: memberItems,
         doneCount,
         totalCount: memberItems.length,
-        progress: memberItems.length === 0 ? 0 : doneCount / memberItems.length,
+        progress: memberItems.length === 0 ? 1 : doneCount / memberItems.length,
       };
     });
   });

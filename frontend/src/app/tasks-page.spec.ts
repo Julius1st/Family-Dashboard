@@ -108,6 +108,10 @@ describe('TasksPage', () => {
     expect(bobColumn?.textContent).toContain('Keine Aufgaben.');
     expect(bobColumn?.querySelector('.tasks-page__member-counter')?.textContent?.trim()).toBe('0/0');
     expect(bobColumn?.style.getPropertyValue('--member-color')).toBe(memberColor(1));
+
+    // A member with zero tasks has nothing outstanding, so the bar reads
+    // as fully "done" (100%) rather than 0% progress on nothing.
+    expect(bobColumn?.querySelector<HTMLElement>('.tasks-page__progress-fill')?.style.width).toBe('100%');
   });
 
   it('calls setDone with the toggled value when a task row is tapped', async () => {
@@ -232,4 +236,33 @@ describe('TasksPage', () => {
 
     expect(getComputedStyle(row!).minHeight).toBe('50px');
   });
+
+  it(
+    'stretches the columns grid to fill the card so per-column add-task buttons ' +
+      '(pinned via their own margin-top: auto) reach the true bottom of the widget, ' +
+      'not just the tallest column\'s natural content height',
+    async () => {
+      // `.tasks-page__columns` is a flex item of `.tasks-page__card`
+      // (display: flex; flex-direction: column). Without its own
+      // `flex-grow`, it would only take its content's natural height,
+      // leaving empty space below it whenever the card is taller than
+      // that content — which is exactly when the per-column add-task
+      // buttons (pinned to the bottom of their own column via
+      // `margin-top: auto`) would stop reaching the widget's real bottom
+      // edge. jsdom does not compute real box layout, so this only
+      // proves the CSS declares the fix (flex-grow: 1, min-height: 0) —
+      // it cannot confirm pixel-accurate bottom alignment across columns
+      // in an actual rendered layout.
+      configureWith(['Alice', 'Bob'], [{ id: 1, householdMember: 'Alice', description: 'Buy milk', done: false }]);
+
+      const fixture = await createFixture();
+      const compiled = fixture.nativeElement as HTMLElement;
+      const columns = compiled.querySelector<HTMLElement>('.tasks-page__columns');
+      const style = getComputedStyle(columns!);
+
+      expect(style.flexGrow).toBe('1');
+      expect(style.flexShrink).toBe('1');
+      expect(style.minHeight).toBe('0px');
+    },
+  );
 });
