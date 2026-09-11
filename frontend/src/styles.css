@@ -23,6 +23,17 @@ body {
      viewport meta tag: stop rubber-band bounce / pull-to-refresh so the
      kiosk screen never scrolls or "gives" at its edges. */
   overscroll-behavior: none;
+  /*
+   * Defensive backstop, added after a second real-device report of the
+   * Tasks widget outgrowing the screen: this is a single-purpose kiosk
+   * page (see CLAUDE.md) with exactly one intentional scroll region per
+   * screen (e.g. `.tasks-page__list`) — the page itself should never be
+   * the thing that scrolls or grows past the viewport. `overflow: hidden`
+   * here guarantees that no matter what a future layout bug does further
+   * down the tree, any overflow gets caught by an internal, intentional
+   * scroll region instead of ever surfacing as page-level scrolling.
+   */
+  overflow: hidden;
 }
 
 /*

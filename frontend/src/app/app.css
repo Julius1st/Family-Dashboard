@@ -2,9 +2,24 @@
  * App shell layout (Ticket 2): a column flex filling the viewport height —
  * the header band (`flex: none`, see header.css) on top, whichever page
  * is active filling the rest.
+ *
+ * `height: 100%`, not `min-height: 100%` (found to be the actual root
+ * cause of the Tasks widget outgrowing the viewport with a lot of tasks —
+ * `min-height` is only a floor, so it let this shell grow TALLER than the
+ * viewport whenever the header + active page together demanded more
+ * space, which silently defeated the whole flex-fill-and-clip chain built
+ * further down in tasks-page.css: instead of the page area being
+ * constrained to "whatever's left after the header" and
+ * `.tasks-page__list` scrolling internally within that fixed budget, this
+ * shell just kept growing to fit the content and the browser page itself
+ * became the thing that grew/scrolled. A definite height here forces the
+ * flex children (header, `flex: none`; active page, `flex: 1 1 auto`) to
+ * share exactly this fixed space, which is what makes descendants'
+ * `min-height: 0` + `overflow-y: auto` actually take effect instead of
+ * being overridden by an ever-growing ancestor.
  */
 :host {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
 }

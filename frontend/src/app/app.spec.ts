@@ -49,6 +49,32 @@ describe('App', () => {
     expect(compiled.querySelector('app-transit-weather-page')).toBeFalsy();
   });
 
+  it(
+    'gives the app shell a definite height (not just a minimum), so the header + active page ' +
+      'are forced to share a fixed budget instead of growing the shell past the viewport',
+    async () => {
+      // Regression test: `:host` used to be `min-height: 100%`, which is
+      // only a floor — it let the shell grow TALLER than the viewport
+      // whenever its children demanded more space, silently overriding
+      // the min-height:0/overflow-y:auto flex-clip chain built further
+      // down in tasks-page.css (the Tasks widget kept "outgrowing the
+      // screen with a lot of tasks" even after that chain was fixed,
+      // because this ancestor never actually constrained the space those
+      // descendants had to fit into). `height: 100%` is a definite size,
+      // which is what makes that chain actually take effect.
+      //
+      // jsdom does no real layout, so this only proves the CSS declares a
+      // definite `height` rather than a `min-height` — it cannot
+      // empirically confirm the browser page no longer grows/scrolls.
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const hostStyle = getComputedStyle(fixture.nativeElement as HTMLElement);
+      expect(hostStyle.height).toBe('100%');
+      expect(hostStyle.minHeight).not.toBe('100%');
+    },
+  );
+
   it('switches to the transit-weather page when the nav service selects it', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
