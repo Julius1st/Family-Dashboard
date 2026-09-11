@@ -18,6 +18,16 @@
 .tasks-page__card {
   flex: 1 1 auto;
   min-width: 0;
+  /*
+   * Without this, a flex item's default `min-height: auto` refuses to
+   * shrink below its content's natural height — so as more tasks push
+   * `.tasks-page__columns`/`.tasks-page__column`/`.tasks-page__list`
+   * taller, the card would be forced to grow past `.tasks-page`'s
+   * actually-available space (and therefore past the viewport) instead of
+   * being clamped to it. `.tasks-page__list` below is what gives the
+   * overflow somewhere to actually go once the card stops growing.
+   */
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -120,6 +130,12 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  /* Same `min-height: auto` blowout fix as `.tasks-page__card` above, one
+     level down: lets a column shrink to fit the grid row's stretched
+     height (from `.tasks-page__columns`'s `align-items: stretch`) rather
+     than forcing the row — and therefore the card and viewport — taller
+     to fit its own content. */
+  min-height: 0;
   padding: 0 22px;
   border-left: 1px solid var(--border-widget);
 }
@@ -179,20 +195,43 @@
   background: var(--member-color);
 }
 
+/* Rendered instead of `.tasks-page__list` when a member has zero tasks —
+   a single line of text, so unlike the list it never needs to scroll.
+   `flex: none` keeps it at its own natural (one-line) height rather than
+   stretching to fill the column's leftover space the way the list does,
+   which would otherwise vertically center-orphan it in a tall column. */
 .tasks-page__column-empty {
+  flex: none;
   margin: 0;
   font-family: var(--font-sans);
   font-size: 17px;
   color: var(--ink-secondary);
 }
 
+/*
+ * The only element in the column that scrolls. `flex: 1 1 auto` lets it
+ * grow to fill whatever space is left in the column after the name-row/
+ * progress-bar (above) and the add-task button (`margin-top: auto`,
+ * below) take their own natural height; `min-height: 0` is the same
+ * flex-blowout fix as `.tasks-page__card`/`.tasks-page__column` above,
+ * applied to the list itself so it can shrink to that leftover space
+ * instead of forcing the column taller. Once its content doesn't fit
+ * that space, `overflow-y: auto` scrolls the list internally — the name/
+ * progress-bar/add-button never move, since they live outside this
+ * element. A little right padding keeps a visible scrollbar from
+ * overlapping the task text.
+ */
 .tasks-page__list {
   list-style: none;
   margin: 0;
   padding: 0;
+  padding-right: 4px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /*

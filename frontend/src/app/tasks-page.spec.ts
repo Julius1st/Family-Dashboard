@@ -265,4 +265,46 @@ describe('TasksPage', () => {
       expect(style.minHeight).toBe('0px');
     },
   );
+
+  it(
+    'clamps the card/column to their allotted space and gives the task list its own scroll region, ' +
+      'so the widget cannot grow past the viewport as tasks are added',
+    async () => {
+      // Regression test for the flexbox `min-height: auto` "blowout" bug:
+      // a flex item's default min-height is `auto` ("never shrink below
+      // your content's natural height"), so without an explicit
+      // `min-height: 0` on every flex item in the card -> columns ->
+      // column chain, a tall content list forces each ancestor to grow
+      // past its actually-available space instead of being clamped to it.
+      // `.tasks-page__list` is the one place in that chain meant to
+      // actually overflow-scroll rather than either grow forever or get
+      // clipped.
+      //
+      // jsdom does not perform real layout/overflow rendering, so this can
+      // only confirm the CSS declares the right properties (min-height: 0
+      // on the card/column, flex/min-height/overflow-y on the list) — it
+      // cannot empirically prove the widget stays within the viewport or
+      // that a real scrollbar appears; that requires a real browser.
+      configureWith(['Alice'], [{ id: 1, householdMember: 'Alice', description: 'Buy milk', done: false }]);
+
+      const fixture = await createFixture();
+      const compiled = fixture.nativeElement as HTMLElement;
+
+      const card = compiled.querySelector<HTMLElement>('.tasks-page__card');
+      const column = compiled.querySelector<HTMLElement>('.tasks-page__column');
+      const list = compiled.querySelector<HTMLElement>('.tasks-page__list');
+      expect(card).not.toBeNull();
+      expect(column).not.toBeNull();
+      expect(list).not.toBeNull();
+
+      expect(getComputedStyle(card!).minHeight).toBe('0px');
+      expect(getComputedStyle(column!).minHeight).toBe('0px');
+
+      const listStyle = getComputedStyle(list!);
+      expect(listStyle.overflowY).toBe('auto');
+      expect(listStyle.flexGrow).toBe('1');
+      expect(listStyle.flexShrink).toBe('1');
+      expect(listStyle.minHeight).toBe('0px');
+    },
+  );
 });
