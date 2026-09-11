@@ -1,5 +1,6 @@
 package com.familydashboard.todo;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ public class TodoController {
 
     @GetMapping
     public List<TodoItemDto> getTodos() {
+        deleteDoneAndOverdueTodos();
         return todoItemRepository.findAllByOrderById().stream()
                 .map(TodoItemDto::from)
                 .toList();
@@ -77,6 +79,17 @@ public class TodoController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No todo item with id " + id);
         }
         todoItemRepository.deleteById(id);
+    }
+
+    /**
+     * Deletes every done+overdue item before the list is read, so a just-
+     * deleted item never appears in the response returned by
+     * {@link #getTodos()}. No scheduled job — this cleanup only ever runs as
+     * a side effect of {@code GET /api/todos}, per this feature's scoped-down
+     * design.
+     */
+    private void deleteDoneAndOverdueTodos() {
+        todoItemRepository.deleteByDoneTrueAndDueDateBefore(LocalDate.now());
     }
 
     private void requireNonBlankDescription(String description) {
