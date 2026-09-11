@@ -26,15 +26,13 @@
       </button>
     </nav>
 
-    <div class="header__theme-pill" aria-label="Design">
-      <button
-        type="button"
-        class="header__theme-item"
-        [class.header__theme-item--active]="isTheme('light')"
-        [attr.aria-current]="isTheme('light') ? 'true' : null"
-        aria-label="Helles Design"
-        (click)="selectTheme('light')"
-      >
+    <button
+      type="button"
+      class="header__theme-toggle"
+      [attr.aria-label]="themeToggleLabel()"
+      (click)="toggleTheme()"
+    >
+      @if (showSunIcon()) {
         <svg
           class="header__theme-icon"
           viewBox="0 0 24 24"
@@ -54,15 +52,7 @@
           <line x1="5.1" y1="18.9" x2="6.9" y2="17.1" />
           <line x1="17.1" y1="6.9" x2="18.9" y2="5.1" />
         </svg>
-      </button>
-      <button
-        type="button"
-        class="header__theme-item"
-        [class.header__theme-item--active]="isTheme('dark')"
-        [attr.aria-current]="isTheme('dark') ? 'true' : null"
-        aria-label="Dunkles Design"
-        (click)="selectTheme('dark')"
-      >
+      } @else {
         <svg
           class="header__theme-icon"
           viewBox="0 0 24 24"
@@ -75,7 +65,7 @@
         >
           <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
         </svg>
-      </button>
-    </div>
+      }
+    </button>
   </div>
 </header>

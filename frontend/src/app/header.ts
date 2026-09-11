@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 
 import { Page, PageNavigationService } from './page-navigation.service';
-import { Theme, ThemeService } from './theme.service';
+import { ThemeService } from './theme.service';
 
 /** Once a minute — the handoff's own "State" section: "seconds are not shown". */
 const CLOCK_UPDATE_INTERVAL_MS = 60_000;
@@ -56,11 +56,20 @@ export class Header {
     this.navigation.select(page);
   }
 
-  protected isTheme(theme: Theme): boolean {
-    return this.theme() === theme;
-  }
+  /**
+   * The single theme button shows the icon of the theme tapping it switches
+   * TO (sun while dark — "tap for bright"; moon while light — "tap for
+   * dark"), matching the pre-redesign single-button toggle's own labeling
+   * convention.
+   */
+  protected readonly showSunIcon = computed(() => this.theme() === 'dark');
 
-  protected selectTheme(theme: Theme): void {
-    this.themeService.setTheme(theme);
+  /** Accessible name for the icon-only toggle button — names the theme tapping it switches TO. */
+  protected readonly themeToggleLabel = computed(() =>
+    this.theme() === 'dark' ? 'Helles Design' : 'Dunkles Design',
+  );
+
+  protected toggleTheme(): void {
+    this.themeService.toggle();
   }
 }

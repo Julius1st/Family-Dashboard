@@ -82,29 +82,20 @@
 }
 
 /*
- * Manual light/dark theme selector (ThemeService). Deliberately the same
- * pill visual language as `.header__nav`/`.header__nav-item` above (same
- * `--bg-inset` well, `--radius-pill` shape, filled-active/transparent-
- * inactive contrast) but laid out vertically and icon-only — this app's
- * design handoff otherwise uses no icons anywhere, so these two are hand-
- * drawn, stroke-based, `currentColor` SVGs rather than an icon font/library
- * (no such dependency exists in this project), which is what lets them pick
- * up `--ink-nav-inactive`/`--ink-on-pill-active` exactly like the nav
- * pill's text does. No hover state, for the same touch-panel reasoning as
- * the nav pill above.
+ * Manual light/dark theme toggle (ThemeService). A single icon-only button
+ * — deliberately not the two-stacked-button pill this went through in an
+ * earlier revision, which grew taller than the header's other content; a
+ * single 44x44px button keeps the same footprint as one `.header__nav-item`
+ * and can't grow the header's height. Still the same pill visual language
+ * as `.header__nav` (`--bg-inset` well, `--radius-pill` shape). Shows one
+ * hand-drawn, stroke-based, `currentColor` SVG at a time (this app's design
+ * handoff otherwise uses no icons anywhere) rather than an icon font/library
+ * (no such dependency exists in this project) — `currentColor` is what lets
+ * it pick up `--ink-primary` via the `color` property below rather than a
+ * hardcoded fill. No hover state, for the same touch-panel reasoning as the
+ * nav pill above.
  */
-.header__theme-pill {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 5px;
-  background: var(--bg-inset);
-  border-radius: var(--radius-pill);
-  flex: none;
-}
-
-.header__theme-item {
+.header__theme-toggle {
   appearance: none;
   border: none;
   cursor: pointer;
@@ -116,13 +107,8 @@
   justify-content: center;
   padding: 0;
   border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--ink-nav-inactive);
-}
-
-.header__theme-item--active {
-  background: var(--ink-primary);
-  color: var(--ink-on-pill-active);
+  background: var(--bg-inset);
+  color: var(--ink-primary);
 }
 
 .header__theme-icon {
