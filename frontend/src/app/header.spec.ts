@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Header } from './header';
 import { PageNavigationService } from './page-navigation.service';
+import { ThemeService } from './theme.service';
 
 describe('Header', () => {
   beforeEach(() => {
@@ -99,5 +100,50 @@ describe('Header', () => {
       const minHeight = getComputedStyle(item).minHeight;
       expect(minHeight).toBe('44px');
     }
+  });
+
+  it('the active nav pill text genuinely resolves via --ink-on-pill-active, not --ink-on-accent', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const activeItem = compiled.querySelector<HTMLButtonElement>('.header__nav-item--active');
+    expect(activeItem).not.toBeNull();
+    // jsdom doesn't substitute var() inside standard properties like
+    // `color`, so getComputedStyle hands back the literal declaration —
+    // which is exactly what lets this assert on the *token name* used,
+    // not just a resolved color value that could match either token.
+    const color = getComputedStyle(activeItem!).color;
+    expect(color).toContain('var(--ink-on-pill-active)');
+    expect(color).not.toContain('var(--ink-on-accent)');
+  });
+
+  it('renders a >=44px theme toggle button labeled with the current theme', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const toggle = compiled.querySelector<HTMLButtonElement>('.header__theme-toggle');
+    expect(toggle).not.toBeNull();
+    expect(toggle!.textContent).toContain('Helles Design');
+
+    const rect = getComputedStyle(toggle!).minHeight;
+    expect(rect).toBe('44px');
+  });
+
+  it('tapping the theme toggle calls ThemeService.toggle()', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+    const themeService = TestBed.inject(ThemeService);
+    const toggleSpy = vi.spyOn(themeService, 'toggle');
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const toggle = compiled.querySelector<HTMLButtonElement>('.header__theme-toggle');
+    toggle!.click();
+
+    expect(toggleSpy).toHaveBeenCalledOnce();
   });
 });

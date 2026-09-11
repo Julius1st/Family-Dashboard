@@ -40,6 +40,13 @@
   white-space: nowrap;
 }
 
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+
 .header__nav {
   display: flex;
   align-items: center;
@@ -71,5 +78,40 @@
 
 .header__nav-item--active {
   background: var(--ink-primary);
-  color: var(--ink-on-accent);
+  color: var(--ink-on-pill-active);
+}
+
+/*
+ * Manual light/dark toggle (ThemeService). A real, labeled button rather
+ * than a bare icon glyph — CLAUDE.md's touch baseline is 44px, and a
+ * kiosk touch panel has no hover affordance to fall back on for
+ * disambiguating an icon-only control, so the German label stays visible
+ * at all times.
+ */
+.header__theme-toggle {
+  appearance: none;
+  box-sizing: border-box;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
+.header__theme-toggle-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.header__theme-toggle-label {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink-secondary);
+  white-space: nowrap;
 }

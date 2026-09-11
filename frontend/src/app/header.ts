@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 
 import { Page, PageNavigationService } from './page-navigation.service';
+import { ThemeService } from './theme.service';
 
 /** Once a minute — the handoff's own "State" section: "seconds are not shown". */
 const CLOCK_UPDATE_INTERVAL_MS = 60_000;
@@ -31,14 +32,21 @@ const DATE_FORMATTER = new Intl.DateTimeFormat('de-DE', {
 })
 export class Header {
   private readonly navigation = inject(PageNavigationService);
+  private readonly themeService = inject(ThemeService);
 
   protected readonly activePage = this.navigation.activePage;
+  protected readonly theme = this.themeService.theme;
 
   /** Ticks once a minute; see the `setInterval` below. */
   private readonly now = signal(new Date());
 
   protected readonly time = computed(() => TIME_FORMATTER.format(this.now()));
   protected readonly date = computed(() => DATE_FORMATTER.format(this.now()));
+
+  /** Button label names the theme that tapping it switches TO. */
+  protected readonly themeToggleLabel = computed(() =>
+    this.theme() === 'dark' ? 'Helles Design' : 'Dunkles Design',
+  );
 
   constructor() {
     const intervalId = setInterval(() => this.now.set(new Date()), CLOCK_UPDATE_INTERVAL_MS);
@@ -51,5 +59,9 @@ export class Header {
 
   protected select(page: Page): void {
     this.navigation.select(page);
+  }
+
+  protected toggleTheme(): void {
+    this.themeService.toggle();
   }
 }
