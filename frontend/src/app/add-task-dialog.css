@@ -120,9 +120,17 @@
 }
 
 /* Filled, same treatment as the active nav pill item, to read as the
-   primary action next to the outline-style cancel button. */
+   primary action next to the outline-style cancel button. Text uses
+   `--ink-on-pill-active` (not `--ink-on-accent`) because the fill here is
+   `--ink-primary`, which inverts between themes (near-white in dark mode,
+   near-black in light mode) — same reasoning as the header's active nav
+   pill (`header.css`'s `.header__nav-item--active`). `--ink-on-accent` is
+   deliberately theme-invariant, correct only for a fixed-lightness surface
+   like a member color (see `.tasks-page__checkmark`) — pairing it with
+   `--ink-primary` here meant light mode's near-black button kept the same
+   fixed-dark text as dark mode, i.e. illegible black-on-near-black. */
 .add-task-dialog__submit {
   border: 1px solid transparent;
   background: var(--ink-primary);
-  color: var(--ink-on-accent);
+  color: var(--ink-on-pill-active);
 }

@@ -171,4 +171,40 @@ describe('AddTaskDialog', () => {
     expect(getComputedStyle(cancelButton(fixture)).minHeight).toBe('48px');
     expect(getComputedStyle(submitButton(fixture)).minHeight).toBe('48px');
   });
+
+  it('the submit button text genuinely resolves via --ink-on-pill-active, not --ink-on-accent', async () => {
+    // Regression test: the submit button fills its background with
+    // `--ink-primary`, which inverts between themes (near-white in dark
+    // mode, near-black in light mode). It used to pair that with
+    // `--ink-on-accent`, a token deliberately fixed at a single dark value
+    // in both themes (correct only for `.tasks-page__checkmark`'s
+    // fixed-lightness member-color background) — so in light mode the
+    // button's background flipped to near-black while the text stayed
+    // fixed-dark, reading as illegible near-black-on-near-black. Same
+    // pairing bug the header's active nav pill already had to solve (see
+    // `header.spec.ts`'s equivalent test) — the fix is the same token,
+    // `--ink-on-pill-active`, which does invert with the theme.
+    configure();
+    const fixture = await createFixture();
+    fixture.componentInstance.open('Alice');
+    await fixture.whenStable();
+
+    // jsdom doesn't substitute var() inside standard properties like
+    // `color`, so getComputedStyle hands back the literal declaration —
+    // which is exactly what lets this assert on the *token name* used,
+    // not just a resolved color value that could match either token.
+    const color = getComputedStyle(submitButton(fixture)).color;
+    expect(color).toContain('var(--ink-on-pill-active)');
+    expect(color).not.toContain('var(--ink-on-accent)');
+  });
+
+  it('leaves the cancel button unaffected: still --ink-secondary, untouched by the submit-button fix', async () => {
+    configure();
+    const fixture = await createFixture();
+    fixture.componentInstance.open('Alice');
+    await fixture.whenStable();
+
+    const color = getComputedStyle(cancelButton(fixture)).color;
+    expect(color).toContain('var(--ink-secondary)');
+  });
 });
