@@ -47,4 +47,14 @@ export class ThemeService {
   toggle(): void {
     this._theme.set(this._theme() === 'dark' ? 'light' : 'dark');
   }
+
+  /**
+   * Sets the theme directly, mirroring `PageNavigationService.select(page)`'s
+   * shape. Setting the already-active theme is a no-op (same signal value in,
+   * same value out) — unlike `toggle()`, this never flips away from the
+   * requested theme.
+   */
+  setTheme(theme: Theme): void {
+    this._theme.set(theme);
+  }
 }

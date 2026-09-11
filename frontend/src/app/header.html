@@ -26,9 +26,56 @@
       </button>
     </nav>
 
-    <button type="button" class="header__theme-toggle" (click)="toggleTheme()">
-      <span class="header__theme-toggle-icon" aria-hidden="true">{{ theme() === 'dark' ? '☀️' : '🌙' }}</span>
-      <span class="header__theme-toggle-label">{{ themeToggleLabel() }}</span>
-    </button>
+    <div class="header__theme-pill" aria-label="Design">
+      <button
+        type="button"
+        class="header__theme-item"
+        [class.header__theme-item--active]="isTheme('light')"
+        [attr.aria-current]="isTheme('light') ? 'true' : null"
+        aria-label="Helles Design"
+        (click)="selectTheme('light')"
+      >
+        <svg
+          class="header__theme-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <line x1="12" y1="2.5" x2="12" y2="5" />
+          <line x1="12" y1="19" x2="12" y2="21.5" />
+          <line x1="2.5" y1="12" x2="5" y2="12" />
+          <line x1="19" y1="12" x2="21.5" y2="12" />
+          <line x1="5.1" y1="5.1" x2="6.9" y2="6.9" />
+          <line x1="17.1" y1="17.1" x2="18.9" y2="18.9" />
+          <line x1="5.1" y1="18.9" x2="6.9" y2="17.1" />
+          <line x1="17.1" y1="6.9" x2="18.9" y2="5.1" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="header__theme-item"
+        [class.header__theme-item--active]="isTheme('dark')"
+        [attr.aria-current]="isTheme('dark') ? 'true' : null"
+        aria-label="Dunkles Design"
+        (click)="selectTheme('dark')"
+      >
+        <svg
+          class="header__theme-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
+        </svg>
+      </button>
+    </div>
   </div>
 </header>

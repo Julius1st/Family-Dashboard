@@ -119,31 +119,124 @@ describe('Header', () => {
     expect(color).not.toContain('var(--ink-on-accent)');
   });
 
-  it('renders a >=44px theme toggle button labeled with the current theme', async () => {
+  it('renders two >=44x44px icon-only theme items, with no text labels', async () => {
     TestBed.configureTestingModule({ imports: [Header] });
     const fixture = TestBed.createComponent(Header);
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const toggle = compiled.querySelector<HTMLButtonElement>('.header__theme-toggle');
-    expect(toggle).not.toBeNull();
-    expect(toggle!.textContent).toContain('Helles Design');
+    const items = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.header__theme-item'));
+    expect(items).toHaveLength(2);
 
-    const rect = getComputedStyle(toggle!).minHeight;
-    expect(rect).toBe('44px');
+    for (const item of items) {
+      expect(item.textContent?.trim()).toBe('');
+      expect(item.querySelector('svg')).not.toBeNull();
+
+      const style = getComputedStyle(item);
+      expect(style.minHeight).toBe('44px');
+      expect(style.minWidth).toBe('44px');
+    }
   });
 
-  it('tapping the theme toggle calls ThemeService.toggle()', async () => {
+  it('defaults to the dark theme item marked active (default theme is dark)', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const [lightItem, darkItem] = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.header__theme-item'));
+    expect(darkItem.classList).toContain('header__theme-item--active');
+    expect(lightItem.classList).not.toContain('header__theme-item--active');
+  });
+
+  it('tapping the light icon calls ThemeService.setTheme("light") and marks it active', async () => {
     TestBed.configureTestingModule({ imports: [Header] });
     const fixture = TestBed.createComponent(Header);
     await fixture.whenStable();
     const themeService = TestBed.inject(ThemeService);
-    const toggleSpy = vi.spyOn(themeService, 'toggle');
+    const setThemeSpy = vi.spyOn(themeService, 'setTheme');
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const toggle = compiled.querySelector<HTMLButtonElement>('.header__theme-toggle');
-    toggle!.click();
+    const [lightItem] = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.header__theme-item'));
+    lightItem.click();
+    await fixture.whenStable();
 
-    expect(toggleSpy).toHaveBeenCalledOnce();
+    expect(setThemeSpy).toHaveBeenCalledOnce();
+    expect(setThemeSpy).toHaveBeenCalledWith('light');
+    expect(themeService.theme()).toBe('light');
+    const [lightItemAfter, darkItemAfter] = Array.from(
+      compiled.querySelectorAll<HTMLButtonElement>('.header__theme-item'),
+    );
+    expect(lightItemAfter.classList).toContain('header__theme-item--active');
+    expect(darkItemAfter.classList).not.toContain('header__theme-item--active');
+  });
+
+  it('is a direct selector, not a toggle: clicking the already-active item is a no-op', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+    const themeService = TestBed.inject(ThemeService);
+
+    // Default theme is 'dark', so the dark item starts active.
+    const compiled = fixture.nativeElement as HTMLElement;
+    const [, darkItem] = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.header__theme-item'));
+    darkItem.click();
+    await fixture.whenStable();
+
+    // A toggle() call here would have flipped to 'light'; setTheme('dark')
+    // while already dark must leave it exactly as it was.
+    expect(themeService.theme()).toBe('dark');
+    const [, darkItemAfter] = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.header__theme-item'));
+    expect(darkItemAfter.classList).toContain('header__theme-item--active');
+  });
+
+  it('the active theme icon resolves via --ink-on-pill-active on a --ink-primary background; the inactive one via --ink-nav-inactive on transparent', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const activeItem = compiled.querySelector<HTMLButtonElement>('.header__theme-item--active');
+    const inactiveItem = compiled.querySelector<HTMLButtonElement>('.header__theme-item:not(.header__theme-item--active)');
+    expect(activeItem).not.toBeNull();
+    expect(inactiveItem).not.toBeNull();
+
+    // As with the nav pill's own equivalent test above, jsdom hands back
+    // the literal var() declaration rather than a resolved color, which is
+    // what lets this assert on the token *name* actually used.
+    const activeStyle = getComputedStyle(activeItem!);
+    expect(activeStyle.color).toContain('var(--ink-on-pill-active)');
+    expect(activeStyle.background).toContain('var(--ink-primary)');
+
+    const inactiveStyle = getComputedStyle(inactiveItem!);
+    expect(inactiveStyle.color).toContain('var(--ink-nav-inactive)');
+    expect(inactiveStyle.background).toContain('rgba(0, 0, 0, 0)');
+  });
+
+  it('the icons use currentColor, not a hardcoded fill/stroke, so they inherit their container color', async () => {
+    TestBed.configureTestingModule({ imports: [Header] });
+    const fixture = TestBed.createComponent(Header);
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const items = Array.from(compiled.querySelectorAll<HTMLButtonElement>('.header__theme-item'));
+    for (const item of items) {
+      const svg = item.querySelector('svg');
+      expect(svg).not.toBeNull();
+      expect(svg!.getAttribute('fill')).toBe('none');
+      expect(svg!.getAttribute('stroke')).toBe('currentColor');
+
+      // No child shape hardcodes its own color/fill either — each one
+      // either omits `fill` entirely or explicitly sets it to 'none',
+      // relying on the parent <svg>'s stroke="currentColor" for color.
+      for (const shape of Array.from(svg!.querySelectorAll('circle, line, path'))) {
+        const fill = shape.getAttribute('fill');
+        expect(fill === null || fill === 'none').toBe(true);
+        expect(shape.getAttribute('stroke')).toBeNull();
+      }
+
+      const icon = item.querySelector<SVGElement>('.header__theme-icon');
+      expect(getComputedStyle(icon!).color).toBe(getComputedStyle(item).color);
+    }
   });
 });

@@ -82,36 +82,51 @@
 }
 
 /*
- * Manual light/dark toggle (ThemeService). A real, labeled button rather
- * than a bare icon glyph — CLAUDE.md's touch baseline is 44px, and a
- * kiosk touch panel has no hover affordance to fall back on for
- * disambiguating an icon-only control, so the German label stays visible
- * at all times.
+ * Manual light/dark theme selector (ThemeService). Deliberately the same
+ * pill visual language as `.header__nav`/`.header__nav-item` above (same
+ * `--bg-inset` well, `--radius-pill` shape, filled-active/transparent-
+ * inactive contrast) but laid out vertically and icon-only — this app's
+ * design handoff otherwise uses no icons anywhere, so these two are hand-
+ * drawn, stroke-based, `currentColor` SVGs rather than an icon font/library
+ * (no such dependency exists in this project), which is what lets them pick
+ * up `--ink-nav-inactive`/`--ink-on-pill-active` exactly like the nav
+ * pill's text does. No hover state, for the same touch-panel reasoning as
+ * the nav pill above.
  */
-.header__theme-toggle {
+.header__theme-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-pill);
+  flex: none;
+}
+
+.header__theme-item {
   appearance: none;
+  border: none;
+  cursor: pointer;
   box-sizing: border-box;
   min-height: 44px;
+  min-width: 44px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border: 1px solid var(--border-control);
+  justify-content: center;
+  padding: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  cursor: pointer;
+  color: var(--ink-nav-inactive);
 }
 
-.header__theme-toggle-icon {
-  font-size: 18px;
-  line-height: 1;
+.header__theme-item--active {
+  background: var(--ink-primary);
+  color: var(--ink-on-pill-active);
 }
 
-.header__theme-toggle-label {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--ink-secondary);
-  white-space: nowrap;
+.header__theme-icon {
+  width: 20px;
+  height: 20px;
+  color: inherit;
 }
