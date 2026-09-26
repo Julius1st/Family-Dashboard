@@ -75,6 +75,15 @@
   /* Accent */
   --accent-rain: oklch(0.72 0.11 235);
   --accent-rain-low: oklch(0.45 0.02 265);
+  /* Rain-risk percentage TEXT at >=50% (Screen 2 weather widget, hourly
+     strip). The handoff's mock gives this its own lightness
+     (oklch(0.78 0.11 235)), distinct from --accent-rain's bar-fill
+     lightness (oklch(0.72 0.11 235)) — a deliberate, if subtle, "text needs
+     to read a touch brighter than a decorative fill" distinction, so it
+     gets its own token rather than reusing --accent-rain for both. Added
+     for Ticket 4 (weather widget component) — same "legitimate gap" pattern
+     as --ink-on-pill-active/--bg-control-hover before it. */
+  --accent-rain-text: oklch(0.78 0.11 235);
 
   /* Fonts */
   --font-sans: 'Schibsted Grotesk', system-ui, sans-serif;
@@ -138,4 +147,11 @@
   /* Accent */
   --accent-rain: oklch(0.55 0.14 235);
   --accent-rain-low: oklch(0.62 0.02 265);
+  /* No light-mode value in the handoff (it has no light palette at all —
+     see this file's top-of-file note). Chosen darker/more saturated than
+     --accent-rain's own light-mode value, the same direction every other
+     ink/accent token here takes moving from a dark to a light surface, so
+     the "high rain" percentage text stays legible on --bg-surface's light
+     background rather than washing out. */
+  --accent-rain-text: oklch(0.5 0.15 235);
 }

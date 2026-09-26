@@ -66,6 +66,25 @@ describe('WeatherService', () => {
     expect(snapshot?.conditionText).toBe('Regen');
   });
 
+  it(
+    'stays undefined and does not throw an unhandled error on a cold-start request failure ' +
+      '(e.g. the backend\'s documented 503 before its first scheduled refresh has ever succeeded)',
+    () => {
+      const service = TestBed.inject(WeatherService);
+
+      const req = httpMock.expectOne('/api/weather');
+      // Flushing an error response is the failure case this test targets:
+      // without WeatherService's own catchError, RxJS would report this as
+      // an unhandled error (rethrown asynchronously) even though nothing
+      // here calls `.toThrow()` around it — the assertion is that this
+      // call itself doesn't blow up the test, plus the signal staying
+      // undefined below.
+      expect(() => req.flush('Cache not yet populated', { status: 503, statusText: 'Service Unavailable' })).not.toThrow();
+
+      expect(service.snapshot()).toBeUndefined();
+    },
+  );
+
   function freshSnapshot(): WeatherSnapshot {
     return {
       currentTemperature: 18.5,

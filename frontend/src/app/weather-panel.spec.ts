@@ -1,0 +1,183 @@
+import { signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { WeatherPanel } from './weather-panel';
+import { WeatherSnapshot } from './weather-snapshot';
+import { WeatherService } from './weather.service';
+
+describe('WeatherPanel', () => {
+  /*
+   * `WeatherPanel.hourly()` reads the real wall clock (`new Date()`) to
+   * slice the "rest of today" hourly window — so every test here fakes
+   * only `Date` (not timers; leaving `setTimeout` etc. real avoids hanging
+   * zoneless change detection's own scheduling) to a fixed morning time,
+   * making every sample hour (09/11/.../19) fall in the future and the
+   * fresh/stale-snapshot tests deterministic regardless of when the suite
+   * actually runs. The dedicated windowing test below overrides this to a
+   * different time to prove the slicing itself.
+   */
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-26T08:00:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function configureWith(snapshot: WeatherSnapshot | undefined) {
+    const snapshotSignal = signal(snapshot);
+    const fake = { snapshot: snapshotSignal };
+    TestBed.configureTestingModule({
+      imports: [WeatherPanel],
+      providers: [{ provide: WeatherService, useValue: fake }],
+    });
+    return fake;
+  }
+
+  async function createFixture(): Promise<ComponentFixture<WeatherPanel>> {
+    const fixture = TestBed.createComponent(WeatherPanel);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  function freshSnapshot(overrides: Partial<WeatherSnapshot> = {}): WeatherSnapshot {
+    return {
+      currentTemperature: 14.4,
+      conditionText: 'Wolkig',
+      highTemperature: 21,
+      lowTemperature: 12.3,
+      hourly: [
+        { hour: 9, temperature: 16, rainProbability: 10 },
+        { hour: 11, temperature: 18, rainProbability: 0 },
+        { hour: 13, temperature: 21, rainProbability: 0 },
+        { hour: 15, temperature: 21, rainProbability: 10 },
+        { hour: 17, temperature: 19, rainProbability: 60 },
+        { hour: 19, temperature: 16, rainProbability: 70 },
+      ],
+      humidityPercent: 62,
+      windSpeedKmh: 11.4,
+      sunset: '2026-09-26T19:42:00',
+      fetchedAt: '2026-09-26T14:02:31.123456Z',
+      stale: false,
+      ...overrides,
+    };
+  }
+
+  it('renders a loading placeholder while the snapshot has not resolved yet', async () => {
+    configureWith(undefined);
+
+    const fixture = await createFixture();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Wetter wird geladen');
+    expect(compiled.querySelectorAll('.weather-panel__hour').length).toBe(0);
+  });
+
+  it('renders the title row (eyebrow/location) and a fresh snapshot\'s current block, hourly strip and stats row', async () => {
+    configureWith(freshSnapshot());
+
+    const fixture = await createFixture();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.weather-panel__eyebrow')?.textContent?.trim()).toBe('WETTER');
+    expect(compiled.querySelector('.weather-panel__title')?.textContent?.trim()).toBe('Karlsruhe');
+
+    // Fresh snapshot: the static "heute" freshness copy, not dimmed/marked stale.
+    const freshness = compiled.querySelector('.weather-panel__freshness');
+    expect(freshness?.textContent?.trim()).toBe('heute');
+    expect(freshness?.classList).not.toContain('weather-panel__freshness--stale');
+
+    // Current block: temperature/condition/hi-lo, each rounded to a whole degree.
+    expect(compiled.querySelector('.weather-panel__temp')?.textContent?.trim()).toBe('14°');
+    expect(compiled.querySelector('.weather-panel__condition')?.textContent?.trim()).toBe('Wolkig');
+    expect(compiled.querySelector('.weather-panel__hi-lo')?.textContent?.trim()).toBe('21° / 12°');
+
+    // Hourly strip: one cell per hour, with the design's exact rain-bar
+    // high/low accent split at the 50% threshold.
+    const hours = Array.from(compiled.querySelectorAll<HTMLElement>('.weather-panel__hour'));
+    expect(hours.length).toBe(6);
+    expect(hours[0].querySelector('.weather-panel__hour-label')?.textContent?.trim()).toBe('09');
+    expect(hours[0].querySelector('.weather-panel__hour-temp')?.textContent?.trim()).toBe('16°');
+
+    // 0% rain still renders a visible (if empty) track, not a hidden one —
+    // "The empty track is what makes 0% legible" (design handoff).
+    const zeroRainHour = hours[1];
+    expect(zeroRainHour.querySelector('.weather-panel__rain-percent')?.textContent?.trim()).toBe('0%');
+    expect(zeroRainHour.querySelector<HTMLElement>('.weather-panel__rain-fill')?.style.height).toBe('0px');
+    expect(zeroRainHour.querySelector('.weather-panel__rain-track')).not.toBeNull();
+    expect(zeroRainHour.querySelector('.weather-panel__rain-percent')?.classList).not.toContain(
+      'weather-panel__rain-percent--high',
+    );
+
+    // >=50% rain gets the "high" accent treatment on both the bar and the percentage text.
+    const highRainHour = hours[4];
+    expect(highRainHour.querySelector('.weather-panel__rain-percent')?.textContent?.trim()).toBe('60%');
+    expect(highRainHour.querySelector('.weather-panel__rain-fill')?.classList).toContain(
+      'weather-panel__rain-fill--high',
+    );
+    expect(highRainHour.querySelector('.weather-panel__rain-percent')?.classList).toContain(
+      'weather-panel__rain-percent--high',
+    );
+    expect(highRainHour.querySelector<HTMLElement>('.weather-panel__rain-fill')?.style.height).toBe('18px');
+
+    // Stats row: humidity/wind/sunset, formatted (no raw ISO string leaking through).
+    const stats = Array.from(compiled.querySelectorAll<HTMLElement>('.weather-panel__stat'));
+    expect(stats.length).toBe(3);
+    expect(stats[0].textContent).toContain('Luftfeuchte');
+    expect(stats[0].textContent).toContain('62%');
+    expect(stats[1].textContent).toContain('Wind');
+    expect(stats[1].textContent).toContain('11 km/h');
+    expect(stats[2].textContent).toContain('Sonnenuntergang');
+    expect(stats[2].querySelector('.weather-panel__stat-value')?.textContent?.trim()).toBe('19:42');
+  });
+
+  it('marks a stale snapshot visibly while still showing its last-known-good numbers, not blanking the widget', async () => {
+    configureWith(
+      freshSnapshot({
+        stale: true,
+        currentTemperature: 9.1,
+        conditionText: 'Regen',
+        fetchedAt: '2026-09-26T09:17:05.000000Z',
+      }),
+    );
+
+    const fixture = await createFixture();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    // Freshness marker visibly differs from the fresh case, but the widget
+    // is not blanked — the rest of the snapshot's values still render.
+    const freshness = compiled.querySelector('.weather-panel__freshness');
+    expect(freshness?.classList).toContain('weather-panel__freshness--stale');
+    expect(freshness?.textContent?.trim()).toBe('veraltet · 09:17');
+
+    expect(compiled.querySelector('.weather-panel__temp')?.textContent?.trim()).toBe('9°');
+    expect(compiled.querySelector('.weather-panel__condition')?.textContent?.trim()).toBe('Regen');
+    expect(compiled.querySelectorAll('.weather-panel__hour').length).toBe(6);
+    expect(compiled.querySelectorAll('.weather-panel__stat').length).toBe(3);
+  });
+
+  it('only shows hours from the current local hour onward, not the full 24-hour array', async () => {
+    vi.setSystemTime(new Date('2026-09-26T16:30:00'));
+
+    configureWith(
+      freshSnapshot({
+        hourly: [
+          { hour: 9, temperature: 16, rainProbability: 10 },
+          { hour: 15, temperature: 21, rainProbability: 10 },
+          { hour: 16, temperature: 20, rainProbability: 20 },
+          { hour: 17, temperature: 19, rainProbability: 60 },
+        ],
+      }),
+    );
+
+    const fixture = await createFixture();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const labels = Array.from(compiled.querySelectorAll('.weather-panel__hour-label')).map((el) =>
+      el.textContent?.trim(),
+    );
+    expect(labels).toEqual(['16', '17']);
+  });
+});

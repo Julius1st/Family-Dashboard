@@ -1,0 +1,56 @@
+<article class="weather-panel">
+  <header class="weather-panel__header">
+    <p class="weather-panel__eyebrow">WETTER</p>
+    <h2 class="weather-panel__title">{{ locationLabel }}</h2>
+    <p class="weather-panel__freshness" [class.weather-panel__freshness--stale]="snapshot()?.stale">
+      {{ freshnessLabel() }}
+    </p>
+  </header>
+
+  @if (snapshot(); as s) {
+    <div class="weather-panel__current">
+      <p class="weather-panel__temp">{{ formatTemperature(s.currentTemperature) }}</p>
+      <div class="weather-panel__current-details">
+        <p class="weather-panel__condition">{{ s.conditionText }}</p>
+        <p class="weather-panel__hi-lo">{{ formatTemperature(s.highTemperature) }} / {{ formatTemperature(s.lowTemperature) }}</p>
+      </div>
+    </div>
+
+    <p class="weather-panel__hourly-eyebrow">TEMPERATUR / REGENRISIKO</p>
+    <div class="weather-panel__hourly-grid">
+      @for (hour of hourly(); track hour.label) {
+        <div class="weather-panel__hour">
+          <p class="weather-panel__hour-label">{{ hour.label }}</p>
+          <p class="weather-panel__hour-temp">{{ hour.temperatureLabel }}</p>
+          <div class="weather-panel__rain-track">
+            <div
+              class="weather-panel__rain-fill"
+              [class.weather-panel__rain-fill--high]="hour.rainHigh"
+              [style.height.px]="hour.rainBarHeightPx"
+            ></div>
+          </div>
+          <p class="weather-panel__rain-percent" [class.weather-panel__rain-percent--high]="hour.rainHigh">
+            {{ hour.rainProbability }}%
+          </p>
+        </div>
+      }
+    </div>
+
+    <div class="weather-panel__stats">
+      <div class="weather-panel__stat">
+        <p class="weather-panel__stat-label">Luftfeuchte</p>
+        <p class="weather-panel__stat-value">{{ s.humidityPercent }}%</p>
+      </div>
+      <div class="weather-panel__stat">
+        <p class="weather-panel__stat-label">Wind</p>
+        <p class="weather-panel__stat-value">{{ formatWindSpeed(s.windSpeedKmh) }}</p>
+      </div>
+      <div class="weather-panel__stat">
+        <p class="weather-panel__stat-label">Sonnenuntergang</p>
+        <p class="weather-panel__stat-value">{{ sunsetLabel() }}</p>
+      </div>
+    </div>
+  } @else {
+    <p class="weather-panel__loading">Wetter wird geladen…</p>
+  }
+</article>
