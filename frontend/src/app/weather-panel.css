@@ -250,16 +250,56 @@
   color: var(--ink-primary);
 }
 
-/* Compact "next 3 days" outlook section (below the stats row, at the
-   bottom of the card): one dense row per day — weekday, condition, hi/lo.
-   Deliberately no rain bars/hourly breakdown here, and deliberately reuses
-   the same small mono type sizes as .weather-panel__stat-label/-value
-   rather than inventing a new, larger type role — this is meant to read as
-   a dense summary, not another big block like .weather-panel__current. */
+/* "Next 3 days" outlook section (below the stats row, at the bottom of the
+   card): one row per day — weekday, condition, hi/lo.  Deliberately no rain
+   bars/hourly breakdown here (that's what .weather-panel__hour above is
+   for, today only).
+
+   Sizing (follow-up feedback: the first, tighter pass "felt too compact" —
+   each row should feel about as tall as one .weather-panel__hour cell).
+   Verified by arithmetic (jsdom can't give real rendered measurements, so
+   this is the same declared-CSS-values sum this project has used before
+   for layout-only claims, not a rendered-pixel confirmation):
+
+   One .weather-panel__hour cell's total height, summing its own declared
+   CSS (flex column, gap 8px, 4 stacked children):
+     hour-label   font-size 14px, line-height 1   -> 14px
+     hour-temp    font-size 21px, line-height 1   -> 21px
+     rain-track   fixed height                    -> 30px
+     rain-percent font-size 13px, line-height 1   -> 13px
+     3 internal gaps x 8px                        -> 24px
+     total                                        = 102px
+
+   One .weather-panel__outlook-row's total height, summing its own declared
+   CSS below (single text line per row, no internal stack — the row's own
+   padding stands in for that internal 24px of gap):
+     tallest of day/condition/hilo's single line:
+       day       font-size 20px, line-height 1 -> 20px
+       condition font-size 18px, line-height 1 -> 18px
+       hilo      font-size 20px, line-height 1 -> 20px
+       -> max                                   = 20px
+     row padding-top + padding-bottom (40px each) = 80px
+     total                                        = 100px
+
+   100px vs. the hourly cell's 102px — a 2px (~2%) difference, well within
+   "roughly the same amount of space."
+
+   Three such rows are ~300px total, several times taller than the first,
+   tighter pass this replaces — reopening exactly the overflow risk class
+   the "3-day outlook" ticket already checked for at the smaller size (see
+   transit-weather-page.css's .transit-weather-page comment). `min-height:
+   0` + `overflow-y: auto` here is the same "let the excess scroll inside
+   its own fixed budget instead of spilling past the card" fix already
+   established by tasks-page.css's `.tasks-page__list` — applied to just
+   this section (not the whole card) so the header/current-conditions/
+   hourly strip/stats row above stay always visible even if this section
+   alone doesn't fully fit. */
 .weather-panel__outlook {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
   border-top: 1px solid var(--border-hairline);
   padding-top: 14px;
 }
@@ -268,18 +308,28 @@
   display: grid;
   /* weekday / condition / hi-lo — condition gets the remaining space since
      German condition text ("Mäßige Regenschauer") is by far the longest
-     of the three; weekday and hi-lo are both short, fixed-width labels. */
-  grid-template-columns: 28px minmax(0, 1fr) auto;
-  align-items: baseline;
+     of the three; weekday and hi-lo are both short, fixed-width labels.
+     34px (not the previous 28px): the weekday label's font-size grew
+     (13px -> 20px) as part of this same sizing pass, and 28px was sized
+     for the smaller font. */
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  /* `center`, not the previous `baseline`: the three pieces no longer
+     share one font-size, so baseline alignment would visibly stagger
+     them; center keeps the row looking like one unit. */
+  align-items: center;
   gap: 10px;
+  /* 40px top + bottom — see this block's arithmetic above: this padding is
+     what actually reaches "about one hourly-cell's height," not the text
+     itself. */
+  padding: 40px 0;
 }
 
 .weather-panel__outlook-day {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1;
   color: var(--ink-muted);
 }
 
@@ -289,18 +339,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1;
   color: var(--ink-secondary);
 }
 
 .weather-panel__outlook-hilo {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1;
   color: var(--ink-primary);
   white-space: nowrap;
 }
