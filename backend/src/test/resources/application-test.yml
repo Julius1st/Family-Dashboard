@@ -1,0 +1,3 @@
+weather:
+  cache:
+    initial-delay-millis: 1800000

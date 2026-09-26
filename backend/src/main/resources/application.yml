@@ -23,3 +23,16 @@ household:
 weather:
   latitude: 49.0069
   longitude: 8.4037
+  cache:
+    # 15 minutes — matches docs/weather-widget-plan.md's recommended refresh
+    # cadence. See WeatherCache's javadoc for why this is externalized
+    # rather than a hardcoded constant.
+    refresh-interval-millis: 900000
+    # Kept short so the real app populates the widget almost immediately on
+    # a cold boot, rather than leaving it showing "Wetter wird geladen…"
+    # for up to a full refresh-interval-millis. src/test/resources/
+    # application.yml overrides this to a much longer value so
+    # @SpringBootTest contexts (which construct this bean for real, with
+    # scheduling active) never trigger a live network call during a test
+    # run.
+    initial-delay-millis: 2000

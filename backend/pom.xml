@@ -123,6 +123,38 @@
       </plugin>
 
       <!--
+        Activates the "test" Spring profile for every `mvn test` run, no
+        per-test-class annotation needed. This is what makes
+        src/test/resources/application-test.yml's overrides (currently just
+        weather.cache.initial-delay-millis, see WeatherCache) apply
+        automatically to every @SpringBootTest in this module.
+
+        NOT a same-named src/test/resources/application.yml: verified
+        empirically (a throwaway ApplicationContextRunner-based probe, since
+        removed) that Spring Boot's default classpath:/application.yml
+        config-data location resolves to a SINGLE resource, not a merge of
+        every same-named classpath entry - Maven Surefire's test-classes
+        precedes classes on the runtime classpath, so a same-named
+        src/test/resources/application.yml would silently REPLACE (not
+        layer on top of) src/main/resources/application.yml, dropping
+        household.members, weather.latitude/longitude, and the datasource
+        config entirely during every test run. Profile-specific documents
+        (application-<profile>.yml) don't have that problem - they're
+        additively layered over the base application.yml by design, which
+        is the actual, correctly-documented Spring Boot mechanism for a
+        test-only partial override like this one.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <spring.profiles.active>test</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <!--
         Frontend bundling (Phase 4 Ticket 1): run `npm run build` (ng build)
         against the Angular app in ../frontend, then copy its compiled output
         onto this jar's classpath under static/, so Spring Boot's default
