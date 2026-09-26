@@ -21,6 +21,37 @@
     <java.version>25</java.version>
   </properties>
 
+  <!--
+    For OpenMeteoWeatherProviderTest's org.wiremock:wiremock-jetty12 test
+    dependency (see its comment below): wiremock-jetty12's own POM manages
+    Jetty at 12.0.16 (importing org.eclipse.jetty:jetty-bom and
+    org.eclipse.jetty.ee10:jetty-ee10-bom at that version), but
+    spring-boot-starter-parent's own dependency management - inherited by
+    every dependency in this project, including test-scoped ones - manages
+    plain org.eclipse.jetty:jetty-bom (not the ee10 one) at 12.1.12, and a
+    project's own effective dependency management always wins over a
+    transitive dependency's, per Maven's dependency mediation rules. That
+    left jetty-server et al. resolved to 12.1.12 while jetty-ee10-servlet
+    et al. stayed at 12.0.16 - two incompatible Jetty release lines on the
+    same classpath, which broke WireMock's server startup with
+    NoSuchMethodError/NoClassDefFoundError (confirmed by running the tests
+    and inspecting `mvn dependency:tree`). Importing jetty-ee10-bom at
+    12.1.12 explicitly (confirmed present on Maven Central) re-aligns it
+    with the jetty-bom version Spring Boot already forces, without
+    touching any of this project's actual production dependencies.
+  -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
+        <version>12.1.12</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -48,6 +79,38 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      For OpenMeteoWeatherProviderTest: CLAUDE.md's own convention requires
+      WireMock (never the live API) for testing external-API provider
+      classes like OpenMeteoWeatherProvider. `org.wiremock:*` (not the
+      older `com.github.tomakehurst` groupId, retired after WireMock 3.0)
+      is the current Maven Central home. Version 3.13.1 is the latest
+      stable release as of this writing (checked via the Maven Central
+      search API; the only newer releases are 4.0.0-beta.* pre-releases).
+
+      WireMock 3.x split its embedded HTTP server out of the core
+      `wiremock` artifact into a separate pluggable engine module - plain
+      `wiremock` alone throws "no suitable HttpServerFactory extension was
+      found" at server startup. `wiremock-jetty12` is that engine, and its
+      own POM (checked on Maven Central) pulls in `wiremock` core itself
+      transitively, with its Jetty-11-era transitive dependencies excluded
+      in favour of a consistent, matched set of Jetty 12 modules - so this
+      is the *only* WireMock dependency to declare directly: adding bare
+      `wiremock` alongside it (tried first) produced two different Jetty
+      major versions on the classpath simultaneously and broke server
+      startup with NoClassDefFoundError. Deliberately not
+      `wiremock-standalone` (a shaded fat jar meant for running WireMock as
+      a separate out-of-process server, not embedding) or
+      `spring-cloud-contract-wiremock` (a thin wrapper pulling in the much
+      heavier Spring Cloud dependency tree for a feature this project
+      doesn't need).
+    -->
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-jetty12</artifactId>
+      <version>3.13.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

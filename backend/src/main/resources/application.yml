@@ -19,3 +19,7 @@ household:
     - Bob
     - Charlie
     - Diana
+
+weather:
+  latitude: 49.0069
+  longitude: 8.4037
