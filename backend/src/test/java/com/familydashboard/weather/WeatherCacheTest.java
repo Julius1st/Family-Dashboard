@@ -2,6 +2,7 @@ package com.familydashboard.weather;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +30,14 @@ class WeatherCacheTest {
     }
 
     @Test
+    void isStaleIsFalseBeforeAnyRefreshHasBeenAttempted() {
+        WeatherProvider weatherProvider = mock(WeatherProvider.class);
+        WeatherCache cache = new WeatherCache(weatherProvider);
+
+        assertThat(cache.isStale()).isFalse();
+    }
+
+    @Test
     void refreshPopulatesTheCacheFromTheProvider() {
         WeatherProvider weatherProvider = mock(WeatherProvider.class);
         WeatherSnapshot snapshot = aSnapshot(18.4);
@@ -38,10 +47,11 @@ class WeatherCacheTest {
         cache.refresh();
 
         assertThat(cache.current()).contains(snapshot);
+        assertThat(cache.isStale()).isFalse();
     }
 
     @Test
-    void aFailedRefreshKeepsServingThePreviousSnapshotInsteadOfAnErrorOrEmptyState() {
+    void aFailedRefreshKeepsServingThePreviousSnapshotInsteadOfAnErrorOrEmptyStateAndMarksItStale() {
         WeatherProvider weatherProvider = mock(WeatherProvider.class);
         WeatherSnapshot goodSnapshot = aSnapshot(18.4);
         when(weatherProvider.fetch()).thenReturn(goodSnapshot);
@@ -52,6 +62,30 @@ class WeatherCacheTest {
 
         assertThatCode(cache::refresh).doesNotThrowAnyException();
         assertThat(cache.current()).contains(goodSnapshot);
+        assertThat(cache.isStale()).isTrue();
+    }
+
+    @Test
+    void aSuccessfulRefreshAfterAFailedOneClearsTheStaleFlag() {
+        WeatherProvider weatherProvider = mock(WeatherProvider.class);
+        WeatherSnapshot goodSnapshot = aSnapshot(18.4);
+        when(weatherProvider.fetch()).thenReturn(goodSnapshot);
+        WeatherCache cache = new WeatherCache(weatherProvider);
+        cache.refresh();
+        when(weatherProvider.fetch()).thenThrow(new RuntimeException("Open-Meteo is unreachable"));
+        cache.refresh();
+        assertThat(cache.isStale()).isTrue();
+
+        // doReturn(...).when(...), not when(...).thenReturn(...): the mock is
+        // still stubbed to throw at this point, and when(mock.fetch())
+        // would invoke that throwing stub immediately while evaluating its
+        // own argument, before Mockito gets a chance to re-stub it.
+        WeatherSnapshot freshSnapshot = aSnapshot(19.1);
+        doReturn(freshSnapshot).when(weatherProvider).fetch();
+        cache.refresh();
+
+        assertThat(cache.current()).contains(freshSnapshot);
+        assertThat(cache.isStale()).isFalse();
     }
 
     @Test

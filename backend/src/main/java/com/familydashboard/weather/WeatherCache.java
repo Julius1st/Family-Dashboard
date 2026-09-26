@@ -46,6 +46,24 @@ public class WeatherCache {
 
     private volatile WeatherSnapshot snapshot;
 
+    /**
+     * Whether the <em>most recent</em> refresh attempt failed (Ticket 2's
+     * {@code GET /api/weather} needs an explicit "is what I'm serving
+     * stale?" signal to implement the design handoff's "mark as stale
+     * rather than blanking the widget" requirement — see {@code
+     * docs/weather-widget-plan.md}'s Ticket 2 section). Tracked explicitly
+     * here rather than left for a caller to infer from {@code
+     * snapshot.fetchedAt()}'s age: inferring staleness from age would need
+     * the caller to duplicate this class's {@link
+     * #REFRESH_INTERVAL_MILLIS} as a threshold, which is both a magic
+     * number leaking across a class boundary and imprecise (it can only
+     * ever guess whether a refresh failed, whereas this class already
+     * knows for certain). {@code false} before any refresh has ever been
+     * attempted — meaningless in that state since {@link #current()} is
+     * still empty, but a sane default rather than a false "stale" signal.
+     */
+    private volatile boolean stale;
+
     public WeatherCache(WeatherProvider weatherProvider) {
         this.weatherProvider = weatherProvider;
     }
@@ -54,7 +72,9 @@ public class WeatherCache {
     void refresh() {
         try {
             snapshot = weatherProvider.fetch();
+            stale = false;
         } catch (RuntimeException e) {
+            stale = true;
             log.warn("Failed to refresh weather snapshot; keeping previous cached value", e);
         }
     }
@@ -66,5 +86,15 @@ public class WeatherCache {
      */
     public Optional<WeatherSnapshot> current() {
         return Optional.ofNullable(snapshot);
+    }
+
+    /**
+     * Whether {@link #current()} (when present) is serving a snapshot from a
+     * refresh attempt older than the most recent one — i.e. the most recent
+     * scheduled refresh failed, so the cache is falling back to the last
+     * known good value instead of the newest one.
+     */
+    public boolean isStale() {
+        return stale;
     }
 }

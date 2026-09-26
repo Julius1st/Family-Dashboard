@@ -1,4 +1,4 @@
-package com.familydashboard.todo;
+package com.familydashboard.weather;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,33 +20,27 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Confirms {@link TodoWidget} is auto-discovered by {@code WidgetRegistry}
- * (Phase 1, unchanged) purely by being a {@code @Component}-annotated
- * {@code Widget} bean, and surfaces over the existing {@code GET
- * /api/widgets} endpoint with no registry or controller changes needed.
+ * Confirms {@link WeatherWidget} is auto-discovered by {@code WidgetRegistry}
+ * (unchanged) purely by being a {@code @Component}-annotated {@code Widget}
+ * bean, and surfaces over the existing {@code GET /api/widgets} endpoint
+ * with no registry or controller changes needed — same proof as {@code
+ * TodoWidgetRegistrationTest} for the todo widget.
  *
- * <p>{@code WidgetControllerTest} (Phase 1) uses a narrow {@code
- * @WebMvcTest} slice with a mocked {@code WidgetRegistry}, so it's
- * unaffected by this new bean; this full-context test is the one that
- * actually proves the wiring end to end.
- *
- * <p>Since the weather widget (Ticket 2 of {@code
- * docs/weather-widget-plan.md}) is now also auto-discovered into this same
- * full application context, this test asserts the todo entry's presence
- * without assuming an exact response size or the todo/weather entries'
- * relative order (registration order across packages isn't part of {@code
- * WidgetRegistry}'s contract) — it only checks that a "todo" entry with the
- * expected {@code displayName} is somewhere in the list.
+ * <p>Uses the full application context ({@code @SpringBootTest}), so both
+ * the todo and weather widgets end up registered; this only asserts the
+ * weather entry's presence, without assuming an exact response size or the
+ * two entries' relative order (not part of {@code WidgetRegistry}'s
+ * contract).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-class TodoWidgetRegistrationTest {
+class WeatherWidgetRegistrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    void getWidgetsIncludesTheTodoWidget() throws Exception {
+    void getWidgetsIncludesTheWeatherWidget() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/widgets"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -56,6 +50,6 @@ class TodoWidgetRegistrationTest {
                 .readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
                 });
 
-        assertThat(widgets).contains(Map.of("id", "todo", "displayName", "Todo Lists"));
+        assertThat(widgets).contains(Map.of("id", "weather", "displayName", "Wetter"));
     }
 }
