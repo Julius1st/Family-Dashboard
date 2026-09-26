@@ -162,6 +162,28 @@ describe('WeatherPanel', () => {
     expect(stats[2].textContent).toContain('Sonnenuntergang');
     expect(stats[2].querySelector('.weather-panel__stat-value')?.textContent?.trim()).toBe('19:42');
 
+    // Stats row alignment: same "1fr auto 1fr" pattern as .weather-panel__header
+    // (eyebrow/title/freshness) — Wind (the middle item) centered in the row,
+    // Sonnenuntergang (the last item) pinned to the row's far edge with both
+    // of its lines right-aligned, Luftfeuchte (the first item) at its default
+    // start position. Honesty note (same as transit-weather-page.spec.ts's own
+    // grid-template-columns test): jsdom has no real layout engine, so this
+    // only confirms the intended CSS rules apply to the right elements with
+    // the right values, not a rendered-pixel confirmation.
+    const statsGrid = compiled.querySelector<HTMLElement>('.weather-panel__stats');
+    expect(getComputedStyle(statsGrid!).gridTemplateColumns).toBe('1fr auto 1fr');
+    expect(getComputedStyle(stats[0]).justifySelf).not.toBe('center');
+    expect(getComputedStyle(stats[0]).justifySelf).not.toBe('end');
+    expect(getComputedStyle(stats[1]).justifySelf).toBe('center');
+    expect(getComputedStyle(stats[2]).justifySelf).toBe('end');
+    expect(getComputedStyle(stats[2].querySelector('.weather-panel__stat-label')!).textAlign).toBe('right');
+    expect(getComputedStyle(stats[2].querySelector('.weather-panel__stat-value')!).textAlign).toBe('right');
+    // Luftfeuchte/Wind's own label/value must NOT have picked up the same
+    // right-alignment - the nth-child(3) selector should be scoped to
+    // Sonnenuntergang only, not leak onto its siblings.
+    expect(getComputedStyle(stats[0].querySelector('.weather-panel__stat-value')!).textAlign).not.toBe('right');
+    expect(getComputedStyle(stats[1].querySelector('.weather-panel__stat-value')!).textAlign).not.toBe('right');
+
     // 3-day outlook: one row per day, below the stats row, each with a
     // weekday/condition/hi-lo line and a rain-risk/rain-amount line.
     const outlookRows = Array.from(compiled.querySelectorAll<HTMLElement>('.weather-panel__outlook-row'));
