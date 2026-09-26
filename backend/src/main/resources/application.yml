@@ -31,7 +31,7 @@ weather:
     # Kept short so the real app populates the widget almost immediately on
     # a cold boot, rather than leaving it showing "Wetter wird geladen…"
     # for up to a full refresh-interval-millis. src/test/resources/
-    # application.yml overrides this to a much longer value so
+    # application-test.yml overrides this to a much longer value so
     # @SpringBootTest contexts (which construct this bean for real, with
     # scheduling active) never trigger a live network call during a test
     # run.

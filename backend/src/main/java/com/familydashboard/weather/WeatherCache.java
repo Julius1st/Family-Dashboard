@@ -67,8 +67,10 @@ public class WeatherCache {
      * short production value (2 seconds, {@code application.yml}) means a
      * real cold boot populates the widget almost immediately instead of
      * leaving it on a loading placeholder for up to a full refresh
-     * interval, while {@code src/test/resources/application.yml} overrides
-     * it to 30 minutes for every test in this module — long enough that no
+     * interval, while {@code src/test/resources/application-test.yml}
+     * (activated for every test via {@code pom.xml}'s Surefire
+     * {@code spring.profiles.active=test} system property) overrides it to
+     * 30 minutes for every test in this module — long enough that no
      * {@code @SpringBootTest} context (which constructs this bean for
      * real, with scheduling active) ever triggers a live network call to
      * Open-Meteo during a test run, the same safety the old shared
