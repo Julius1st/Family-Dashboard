@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -106,6 +107,7 @@ class WeatherCacheTest {
                 21.3,
                 9.0,
                 List.of(new HourlyForecast(13, 20.6, 5)),
+                List.of(new DailyForecast(LocalDate.of(2026, 9, 27), "Leichter Regen", 19.8, 8.4)),
                 62,
                 11.2,
                 LocalDateTime.of(2026, 9, 26, 19, 32),

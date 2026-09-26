@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 
+import { DailyForecast } from './daily-forecast';
 import { HourlyForecast } from './hourly-forecast';
 import { WeatherService } from './weather.service';
 
@@ -27,6 +28,18 @@ const RAIN_BAR_PX_PER_PERCENT = 0.3;
  */
 const TIME_FORMATTER = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
 
+/**
+ * Short German weekday label for each 3-day outlook row (e.g. "Mo", "Di") —
+ * same "hardcoded German locale, no Angular `DatePipe`/i18n registration"
+ * convention as `TIME_FORMATTER` above. `outlook[].date` is a date-only ISO
+ * string (e.g. "2026-09-27", no time component — see `DailyForecast`'s own
+ * doc comment), which `new Date(...)` parses as UTC midnight; since this
+ * dashboard only ever targets `Europe/Berlin` (a positive UTC offset), that
+ * always still falls on the same calendar day locally, so no timezone-shift
+ * bug here.
+ */
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
+
 /** One hourly-strip cell's fully-derived view model — never stored, only ever produced by `hourly()` below. */
 interface HourlyCell {
   /** Zero-padded hour label, e.g. "09". */
@@ -36,6 +49,22 @@ interface HourlyCell {
   readonly rainBarHeightPx: number;
   /** `true` at/above `RAIN_HIGH_THRESHOLD_PERCENT` — drives the bar-fill/percentage-text accent color. */
   readonly rainHigh: boolean;
+}
+
+/**
+ * One compact "next 3 days" outlook row's fully-derived view model — never
+ * stored, only ever produced by `outlook()` below. Deliberately has no
+ * hourly/rain fields: "No hourly display, but values for the whole day" per
+ * the feature request this section implements.
+ */
+interface OutlookRow {
+  /** The day's ISO date string, used as the `@for` track key. */
+  readonly date: string;
+  /** Short German weekday label, e.g. "Mo". */
+  readonly weekdayLabel: string;
+  readonly conditionText: string;
+  /** Pre-formatted "hi / lo", e.g. "19° / 8°" — same "high / low" shape as `.weather-panel__hi-lo` for today. */
+  readonly hiLoLabel: string;
 }
 
 /**
@@ -86,6 +115,13 @@ interface HourlyCell {
  * case, this widget has no retry control per the handoff's "read-only"
  * framing, and a separate "unavailable" message would tell the user
  * nothing they could act on differently from "give it a moment."
+ *
+ * **3-day outlook**: a compact section below the stats row showing
+ * tomorrow, the day after, and the day after that — one dense row per day
+ * (weekday/condition/hi-lo), deliberately no hourly breakdown for these
+ * (that's what `hourly` above is for, and only for today) per the feature
+ * request that this fill the card's remaining room without turning into
+ * another big block like the current-conditions section.
  */
 @Component({
   selector: 'app-weather-panel',
@@ -123,12 +159,26 @@ export class WeatherPanel {
     return snapshot ? TIME_FORMATTER.format(new Date(snapshot.sunset)) : '';
   });
 
+  protected readonly outlook = computed<readonly OutlookRow[]>(() => {
+    const snapshot = this.snapshot();
+    return snapshot ? snapshot.outlook.map((day) => this.toOutlookRow(day)) : [];
+  });
+
   protected formatTemperature(value: number): string {
     return `${Math.round(value)}°`;
   }
 
   protected formatWindSpeed(value: number): string {
     return `${Math.round(value)} km/h`;
+  }
+
+  private toOutlookRow(day: DailyForecast): OutlookRow {
+    return {
+      date: day.date,
+      weekdayLabel: WEEKDAY_FORMATTER.format(new Date(day.date)),
+      conditionText: day.conditionText,
+      hiLoLabel: `${this.formatTemperature(day.highTemperature)} / ${this.formatTemperature(day.lowTemperature)}`,
+    };
   }
 }
 

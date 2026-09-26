@@ -50,6 +50,16 @@
         <p class="weather-panel__stat-value">{{ sunsetLabel() }}</p>
       </div>
     </div>
+
+    <div class="weather-panel__outlook">
+      @for (day of outlook(); track day.date) {
+        <div class="weather-panel__outlook-row">
+          <p class="weather-panel__outlook-day">{{ day.weekdayLabel }}</p>
+          <p class="weather-panel__outlook-condition">{{ day.conditionText }}</p>
+          <p class="weather-panel__outlook-hilo">{{ day.hiLoLabel }}</p>
+        </div>
+      }
+    </div>
   } @else {
     <p class="weather-panel__loading">Wetter wird geladen…</p>
   }

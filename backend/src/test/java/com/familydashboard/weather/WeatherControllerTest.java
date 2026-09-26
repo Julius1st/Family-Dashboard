@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -43,6 +44,10 @@ class WeatherControllerTest {
                 21.3,
                 9.0,
                 List.of(new HourlyForecast(13, 20.6, 5), new HourlyForecast(14, 21.0, 10)),
+                List.of(
+                        new DailyForecast(LocalDate.of(2026, 9, 27), "Leichter Regen", 19.8, 8.4),
+                        new DailyForecast(LocalDate.of(2026, 9, 28), "Gewitter", 17.5, 7.1),
+                        new DailyForecast(LocalDate.of(2026, 9, 29), "Überwiegend klar", 22.1, 10.6)),
                 62,
                 11.2,
                 LocalDateTime.of(2026, 9, 26, 19, 42),
@@ -62,6 +67,12 @@ class WeatherControllerTest {
                 .andExpect(jsonPath("$.hourly[0].temperature").value(20.6))
                 .andExpect(jsonPath("$.hourly[0].rainProbability").value(5))
                 .andExpect(jsonPath("$.hourly[1].hour").value(14))
+                .andExpect(jsonPath("$.outlook").isArray())
+                .andExpect(jsonPath("$.outlook[0].date").value("2026-09-27"))
+                .andExpect(jsonPath("$.outlook[0].conditionText").value("Leichter Regen"))
+                .andExpect(jsonPath("$.outlook[0].highTemperature").value(19.8))
+                .andExpect(jsonPath("$.outlook[0].lowTemperature").value(8.4))
+                .andExpect(jsonPath("$.outlook[2].date").value("2026-09-29"))
                 .andExpect(jsonPath("$.humidityPercent").value(62))
                 .andExpect(jsonPath("$.windSpeedKmh").value(11.2))
                 .andExpect(jsonPath("$.sunset").value("2026-09-26T19:42:00"))
@@ -79,6 +90,7 @@ class WeatherControllerTest {
                 17.0,
                 10.0,
                 List.of(new HourlyForecast(9, 14.5, 40)),
+                List.of(new DailyForecast(LocalDate.of(2026, 9, 27), "Bedeckt", 16.0, 9.5)),
                 70,
                 8.5,
                 LocalDateTime.of(2026, 9, 26, 19, 40),

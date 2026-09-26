@@ -15,7 +15,25 @@
 .transit-weather-page {
   display: grid;
   flex: 1 1 auto;
+  min-height: 0;
   grid-template-columns: minmax(0, 1fr) 452px;
+  /*
+   * Explicit `minmax(0, 1fr)` row, not the implicit `auto` this used to
+   * fall back to: an `auto`-sized grid row grows to fit its tallest item's
+   * max-content height regardless of how much space this grid container
+   * itself was actually given by the flex chain above (`:host`'s own
+   * `flex: 1 1 auto; min-height: 0`) — the grid-layout equivalent of the
+   * flex-item `min-height: auto` footgun already documented (and fixed) in
+   * app.css/tasks-page.css for the Tasks widget. `app-weather-panel`'s own
+   * card grew a third section for the 3-day outlook (see weather-panel.css)
+   * without this, that extra height had nowhere to go but to spill this
+   * whole grid past the fixed-height app shell exactly like that earlier
+   * bug — `minmax(0, 1fr)` lets the row (and everything under it, down
+   * through `:host`'s and `.weather-panel`'s own already-`min-height: 0`
+   * chain) actually be constrained to the space this container has, rather
+   * than dictating a taller one.
+   */
+  grid-template-rows: minmax(0, 1fr);
   gap: 20px;
   padding: var(--space-page-y) var(--space-page-x);
   box-sizing: border-box;

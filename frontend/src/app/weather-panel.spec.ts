@@ -56,6 +56,11 @@ describe('WeatherPanel', () => {
         { hour: 17, temperature: 19, rainProbability: 60 },
         { hour: 19, temperature: 16, rainProbability: 70 },
       ],
+      outlook: [
+        { date: '2026-09-27', conditionText: 'Leichter Regen', highTemperature: 19.8, lowTemperature: 8.4 },
+        { date: '2026-09-28', conditionText: 'Gewitter', highTemperature: 17.5, lowTemperature: 7.1 },
+        { date: '2026-09-29', conditionText: 'Überwiegend klar', highTemperature: 22.1, lowTemperature: 10.6 },
+      ],
       humidityPercent: 62,
       windSpeedKmh: 11.4,
       sunset: '2026-09-26T19:42:00',
@@ -73,6 +78,7 @@ describe('WeatherPanel', () => {
 
     expect(compiled.textContent).toContain('Wetter wird geladen');
     expect(compiled.querySelectorAll('.weather-panel__hour').length).toBe(0);
+    expect(compiled.querySelectorAll('.weather-panel__outlook-row').length).toBe(0);
   });
 
   it('renders the title row (eyebrow/location) and a fresh snapshot\'s current block, hourly strip and stats row', async () => {
@@ -131,6 +137,24 @@ describe('WeatherPanel', () => {
     expect(stats[1].textContent).toContain('11 km/h');
     expect(stats[2].textContent).toContain('Sonnenuntergang');
     expect(stats[2].querySelector('.weather-panel__stat-value')?.textContent?.trim()).toBe('19:42');
+
+    // 3-day outlook: one compact row per day, below the stats row, no
+    // hourly/rain elements reused inside it.
+    const outlookRows = Array.from(compiled.querySelectorAll<HTMLElement>('.weather-panel__outlook-row'));
+    expect(outlookRows.length).toBe(3);
+    expect(outlookRows[0].querySelector('.weather-panel__outlook-day')?.textContent?.trim()).toBe('So');
+    expect(outlookRows[0].querySelector('.weather-panel__outlook-condition')?.textContent?.trim()).toBe(
+      'Leichter Regen',
+    );
+    expect(outlookRows[0].querySelector('.weather-panel__outlook-hilo')?.textContent?.trim()).toBe('20° / 8°');
+    expect(outlookRows[1].querySelector('.weather-panel__outlook-day')?.textContent?.trim()).toBe('Mo');
+    expect(outlookRows[1].querySelector('.weather-panel__outlook-condition')?.textContent?.trim()).toBe('Gewitter');
+    expect(outlookRows[1].querySelector('.weather-panel__outlook-hilo')?.textContent?.trim()).toBe('18° / 7°');
+    expect(outlookRows[2].querySelector('.weather-panel__outlook-day')?.textContent?.trim()).toBe('Di');
+    expect(outlookRows[2].querySelector('.weather-panel__outlook-condition')?.textContent?.trim()).toBe(
+      'Überwiegend klar',
+    );
+    expect(outlookRows[2].querySelector('.weather-panel__outlook-hilo')?.textContent?.trim()).toBe('22° / 11°');
   });
 
   it('marks a stale snapshot visibly while still showing its last-known-good numbers, not blanking the widget', async () => {

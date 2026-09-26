@@ -24,6 +24,12 @@ import java.util.List;
  * @param highTemperature    today's forecast high, in degrees Celsius.
  * @param lowTemperature     today's forecast low, in degrees Celsius.
  * @param hourly             hour-by-hour forecast for the rest of the day.
+ * @param outlook            whole-day summaries (no hourly breakdown) for
+ *                            the next 3 days — tomorrow, the day after, and
+ *                            the day after that. Does not include today:
+ *                            today is already fully represented by {@code
+ *                            highTemperature}/{@code lowTemperature}/{@code
+ *                            conditionText}/{@code hourly} above.
  * @param humidityPercent    relative humidity, 0-100 (percent).
  * @param windSpeedKmh       wind speed in km/h.
  * @param sunset             today's sunset time.
@@ -39,6 +45,7 @@ public record WeatherSnapshot(
         double highTemperature,
         double lowTemperature,
         List<HourlyForecast> hourly,
+        List<DailyForecast> outlook,
         int humidityPercent,
         double windSpeedKmh,
         LocalDateTime sunset,

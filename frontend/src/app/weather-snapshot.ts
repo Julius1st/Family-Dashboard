@@ -1,3 +1,4 @@
+import { DailyForecast } from './daily-forecast';
 import { HourlyForecast } from './hourly-forecast';
 
 /**
@@ -6,7 +7,7 @@ import { HourlyForecast } from './hourly-forecast';
  *
  * Mirrors the backend's `com.familydashboard.weather.WeatherDto` record
  * exactly: `{ currentTemperature, conditionText, highTemperature,
- * lowTemperature, hourly, humidityPercent, windSpeedKmh, sunset,
+ * lowTemperature, hourly, outlook, humidityPercent, windSpeedKmh, sunset,
  * fetchedAt, stale }`.
  *
  * `sunset` (backend `LocalDateTime`) and `fetchedAt` (backend `Instant`)
@@ -25,6 +26,13 @@ export interface WeatherSnapshot {
   readonly lowTemperature: number;
   /** Hourly forecast strip. */
   readonly hourly: readonly HourlyForecast[];
+  /**
+   * Whole-day summaries (no hourly breakdown) for the next 3 days —
+   * tomorrow, the day after, and the day after that. Does not include
+   * today: today is already fully represented by `highTemperature`/
+   * `lowTemperature`/`conditionText`/`hourly` above.
+   */
+  readonly outlook: readonly DailyForecast[];
   /** Current relative humidity, 0-100 (percent). */
   readonly humidityPercent: number;
   /** Current wind speed in km/h. */

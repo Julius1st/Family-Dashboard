@@ -1,6 +1,7 @@
 package com.familydashboard.weather;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,24 +43,38 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
     private static final String DEFAULT_BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
     /**
-     * Pinned per {@code docs/weather-widget-plan.md}'s "Data source: Open-
-     * Meteo" section: Karlsruhe's coordinates already route to DWD's ICON-D2
-     * model via Open-Meteo's default {@code best_match} selection, but
-     * pinning this explicitly guarantees that stays true even if Open-
-     * Meteo's default-selection logic ever changes.
+     * This widget originally only ever showed "today" (current conditions,
+     * today's hi/lo, today's sunset, an hourly strip for the rest of today),
+     * hence {@code forecast_days=1}. Now also needs a compact 3-day outlook
+     * (tomorrow, the day after, and the day after that — see the "next 3
+     * days" summary section), so this covers today plus those 3 further
+     * days. The hourly strip is still today-only ({@link #toHourlyForecasts}
+     * filters the now-4-day-wide {@code hourly} array back down to just
+     * today's entries) — only the {@code daily} block actually needs all 4
+     * days.
+     *
+     * <p><b>No {@code models} parameter is pinned</b> — a deliberate
+     * reversal of Ticket 1's original choice to pin {@code models=icon_d2},
+     * made after live-verifying against the real Open-Meteo API
+     * (api.open-meteo.com is reachable from this environment) once this
+     * ticket widened the request from 1 to 4 forecast days. With {@code
+     * models=icon_d2} pinned and {@code forecast_days=4}, Open-Meteo's
+     * {@code daily.temperature_2m_max}/{@code temperature_2m_min}/{@code
+     * weather_code} for Karlsruhe came back {@code null} for the last two of
+     * the four requested days — confirming ICON-D2's documented ~2-day
+     * forecast horizon: it can only support "today" plus one more day, not
+     * the 3-day outlook this ticket needs. Dropping the {@code models}
+     * parameter entirely (falling back to Open-Meteo's default {@code
+     * best_match} selection) returned fully populated, non-null daily values
+     * for all 4 requested days for the same coordinates and parameters —
+     * {@code best_match} transparently blends ICON-D2 for the near term with
+     * a longer-horizon model (e.g. ICON-EU) once ICON-D2's own horizon is
+     * exceeded, which is exactly the documented multi-model behaviour this
+     * fix relies on. Today's {@code current}/hourly values were byte-for-byte
+     * identical between both requests, so this switch costs nothing for the
+     * existing "today" display.
      */
-    private static final String MODEL = "icon_d2";
-
-    /**
-     * This widget only ever shows "today" (current conditions, today's
-     * hi/lo, today's sunset, and an hourly strip for the rest of today — see
-     * the design handoff's "heute" framing), so the request is scoped to a
-     * single forecast day. Not called out explicitly as a query parameter in
-     * the plan doc's "Fields needed" list, but a direct consequence of that
-     * "today only" scope, and it keeps the hourly array to 24 entries
-     * instead of Open-Meteo's 7-day default (168 entries).
-     */
-    private static final int FORECAST_DAYS = 1;
+    private static final int FORECAST_DAYS = 4;
 
     /**
      * Also not listed explicitly in the plan doc's "Fields needed" section,
@@ -75,7 +90,14 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
     private static final String TIMEZONE = "Europe/Berlin";
 
     private static final String CURRENT_FIELDS = "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m";
-    private static final String DAILY_FIELDS = "temperature_2m_max,temperature_2m_min,sunset";
+
+    /**
+     * {@code weather_code} added for this ticket: today's condition text
+     * already comes from {@code current.weather_code}, but the 3-day outlook
+     * needs each future day's own condition, which only exists at the daily
+     * level (there's no "current" for a future day).
+     */
+    private static final String DAILY_FIELDS = "temperature_2m_max,temperature_2m_min,sunset,weather_code";
     private static final String HOURLY_FIELDS = "temperature_2m,precipitation_probability";
 
     private final RestClient restClient;
@@ -108,7 +130,6 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
         String url = UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("latitude", weatherProperties.latitude())
                 .queryParam("longitude", weatherProperties.longitude())
-                .queryParam("models", MODEL)
                 .queryParam("forecast_days", FORECAST_DAYS)
                 .queryParam("timezone", TIMEZONE)
                 .queryParam("current", CURRENT_FIELDS)
@@ -128,6 +149,7 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
         Current current = response.current();
         Daily daily = response.daily();
         Hourly hourly = response.hourly();
+        LocalDate today = LocalDate.parse(daily.time().get(0));
 
         return new WeatherSnapshot(
                 current.temperature2m(),
@@ -135,23 +157,55 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
                 WeatherConditionTexts.forCode(current.weatherCode()),
                 daily.temperature2mMax().get(0),
                 daily.temperature2mMin().get(0),
-                toHourlyForecasts(hourly),
+                toHourlyForecasts(hourly, today),
+                toOutlook(daily),
                 current.relativeHumidity2m(),
                 current.windSpeed10m(),
                 LocalDateTime.parse(daily.sunset().get(0)),
                 Instant.now());
     }
 
-    private static List<HourlyForecast> toHourlyForecasts(Hourly hourly) {
-        List<HourlyForecast> forecasts = new ArrayList<>(hourly.time().size());
+    /**
+     * {@code hourly} now spans all {@link #FORECAST_DAYS} days (4), not just
+     * today, since the {@code daily} block needs those extra days for the
+     * outlook — but the hourly strip itself is still today-only (see the
+     * design handoff's "heute" framing), so entries for any other day are
+     * filtered back out here rather than left for the frontend to sift
+     * through.
+     */
+    private static List<HourlyForecast> toHourlyForecasts(Hourly hourly, LocalDate today) {
+        List<HourlyForecast> forecasts = new ArrayList<>();
         for (int i = 0; i < hourly.time().size(); i++) {
-            int hourOfDay = LocalDateTime.parse(hourly.time().get(i)).getHour();
+            LocalDateTime dateTime = LocalDateTime.parse(hourly.time().get(i));
+            if (!dateTime.toLocalDate().equals(today)) {
+                continue;
+            }
             forecasts.add(new HourlyForecast(
-                    hourOfDay,
+                    dateTime.getHour(),
                     hourly.temperature2m().get(i),
                     hourly.precipitationProbability().get(i)));
         }
         return forecasts;
+    }
+
+    /**
+     * Indices 1, 2 and 3 of {@code daily} — tomorrow, the day after, and the
+     * day after that. Index 0 (today) is deliberately skipped: it's already
+     * represented by {@link WeatherSnapshot#highTemperature()}/{@link
+     * WeatherSnapshot#lowTemperature()}/{@link WeatherSnapshot#conditionText()}
+     * /{@link WeatherSnapshot#hourly()}, so including it here too would
+     * duplicate today's data under a second name.
+     */
+    private static List<DailyForecast> toOutlook(Daily daily) {
+        List<DailyForecast> outlook = new ArrayList<>();
+        for (int i = 1; i < daily.time().size(); i++) {
+            outlook.add(new DailyForecast(
+                    LocalDate.parse(daily.time().get(i)),
+                    WeatherConditionTexts.forCode(daily.weatherCode().get(i)),
+                    daily.temperature2mMax().get(i),
+                    daily.temperature2mMin().get(i)));
+        }
+        return outlook;
     }
 
     /**
@@ -178,7 +232,8 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
             List<String> time,
             @JsonProperty("temperature_2m_max") List<Double> temperature2mMax,
             @JsonProperty("temperature_2m_min") List<Double> temperature2mMin,
-            List<String> sunset) {
+            List<String> sunset,
+            @JsonProperty("weather_code") List<Integer> weatherCode) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

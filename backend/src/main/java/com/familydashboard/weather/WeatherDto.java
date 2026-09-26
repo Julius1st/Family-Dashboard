@@ -17,7 +17,12 @@ import java.util.List;
  * entity, not an upstream/Open-Meteo shape) whose field names
  * ({@code hour}/{@code temperature}/{@code rainProbability}) are exactly the
  * frontend-facing shape the design calls for — a wrapper type here would be
- * pure duplication.
+ * pure duplication. {@code outlook} makes the same call and reuses {@link
+ * DailyForecast} directly for the identical reason: it's already our own
+ * plain domain record with exactly the frontend-facing field names ({@code
+ * date}/{@code conditionText}/{@code highTemperature}/{@code
+ * lowTemperature}), so a parallel {@code DailyForecastDto} would add a type
+ * with no behavioural difference — pure ceremony.
  *
  * @param stale     {@code true} if the most recent scheduled refresh failed
  *                   and this is a previously cached value being served as a
@@ -36,6 +41,7 @@ public record WeatherDto(
         double highTemperature,
         double lowTemperature,
         List<HourlyForecast> hourly,
+        List<DailyForecast> outlook,
         int humidityPercent,
         double windSpeedKmh,
         LocalDateTime sunset,
@@ -49,6 +55,7 @@ public record WeatherDto(
                 snapshot.highTemperature(),
                 snapshot.lowTemperature(),
                 snapshot.hourly(),
+                snapshot.outlook(),
                 snapshot.humidityPercent(),
                 snapshot.windSpeedKmh(),
                 snapshot.sunset(),

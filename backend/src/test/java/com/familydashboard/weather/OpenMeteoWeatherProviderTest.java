@@ -1,5 +1,6 @@
 package com.familydashboard.weather;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -13,6 +14,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -26,17 +28,22 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 /**
  * WireMock-based test for {@link OpenMeteoWeatherProvider}, per {@code
  * CLAUDE.md}'s "Tests for these use WireMock, never the live API"
- * convention — this devcontainer's egress firewall can't reach {@code
- * api.open-meteo.com} at all (see {@code docs/weather-widget-plan.md}'s
- * "Environment constraint" section).
+ * convention. (Correction to this class's older comment here: this
+ * environment's egress firewall was found, while implementing the 3-day
+ * outlook ticket, to actually reach {@code api.open-meteo.com} live — used
+ * one-off to empirically verify the {@code models=icon_d2} vs. default
+ * {@code best_match} question, see {@code OpenMeteoWeatherProvider}'s {@code
+ * FORECAST_DAYS} javadoc. That doesn't change this test's own approach: it
+ * still uses WireMock, never the live API, for determinism and to keep
+ * running offline.)
  *
  * <p><b>Honesty note on the fixture:</b> {@code
  * weather/open-meteo-response.json} is a hand-constructed, realistic
  * example response, built from Open-Meteo's documented response schema (top-
  * level {@code current}/{@code daily}/{@code hourly} objects, each with a
- * {@code time} array and one parallel value array per requested variable) —
- * it is <b>not</b> a genuine response captured from the live API, since this
- * sandbox cannot reach {@code api.open-meteo.com} to capture one.
+ * {@code time} array and one parallel value array per requested variable),
+ * shaped to match real values observed against the live API during the
+ * verification above — it is still not a byte-for-byte captured response.
  */
 class OpenMeteoWeatherProviderTest {
 
@@ -77,6 +84,11 @@ class OpenMeteoWeatherProviderTest {
         assertThat(snapshot.windSpeedKmh()).isEqualTo(11.2);
         assertThat(snapshot.sunset()).isEqualTo(LocalDateTime.of(2026, 9, 26, 19, 32));
 
+        // Even though the fixture's hourly block now spans 2 days (48
+        // entries, since forecast_days=4 widens the daily block but the
+        // hourly strip stays today-only), the snapshot's hourly list must
+        // still only have today's 24 entries - proves the day-filter in
+        // toHourlyForecasts actually filters, not just happens to work.
         assertThat(snapshot.hourly()).hasSize(24);
         assertThat(snapshot.hourly().get(0).hour()).isEqualTo(0);
         assertThat(snapshot.hourly().get(0).temperature()).isEqualTo(10.1);
@@ -86,6 +98,35 @@ class OpenMeteoWeatherProviderTest {
         assertThat(snapshot.hourly().get(13).rainProbability()).isEqualTo(5);
         assertThat(snapshot.hourly().get(18).hour()).isEqualTo(18);
         assertThat(snapshot.hourly().get(18).rainProbability()).isEqualTo(30);
+        assertThat(snapshot.hourly().get(23).hour()).isEqualTo(23);
+
+        // The 3-day outlook: fixture's daily block has 4 entries (today +
+        // 3), and the outlook must map indices 1-3 only - index 0 (today,
+        // 2026-09-26) must NOT reappear here, since it's already fully
+        // represented by highTemperature/lowTemperature/conditionText/hourly
+        // above.
+        assertThat(snapshot.outlook()).hasSize(3);
+        assertThat(snapshot.outlook()).extracting(DailyForecast::date)
+                .containsExactly(
+                        LocalDate.of(2026, 9, 27),
+                        LocalDate.of(2026, 9, 28),
+                        LocalDate.of(2026, 9, 29))
+                .doesNotContain(LocalDate.of(2026, 9, 26));
+
+        DailyForecast tomorrow = snapshot.outlook().get(0);
+        assertThat(tomorrow.conditionText()).isEqualTo("Leichter Regen"); // WMO code 61, via WeatherConditionTexts
+        assertThat(tomorrow.highTemperature()).isEqualTo(19.8);
+        assertThat(tomorrow.lowTemperature()).isEqualTo(8.4);
+
+        DailyForecast dayAfterTomorrow = snapshot.outlook().get(1);
+        assertThat(dayAfterTomorrow.conditionText()).isEqualTo("Gewitter"); // WMO code 95
+        assertThat(dayAfterTomorrow.highTemperature()).isEqualTo(17.5);
+        assertThat(dayAfterTomorrow.lowTemperature()).isEqualTo(7.1);
+
+        DailyForecast thirdDay = snapshot.outlook().get(2);
+        assertThat(thirdDay.conditionText()).isEqualTo("Überwiegend klar"); // WMO code 1
+        assertThat(thirdDay.highTemperature()).isEqualTo(22.1);
+        assertThat(thirdDay.lowTemperature()).isEqualTo(10.6);
 
         // fetchedAt is our own bookkeeping (not an upstream field) - assert
         // it was stamped during this call, not any exact value.
@@ -104,12 +145,16 @@ class OpenMeteoWeatherProviderTest {
         wireMockServer.verify(getRequestedFor(urlPathEqualTo("/v1/forecast"))
                 .withQueryParam("latitude", equalTo("49.0069"))
                 .withQueryParam("longitude", equalTo("8.4037"))
-                .withQueryParam("models", equalTo("icon_d2"))
-                .withQueryParam("forecast_days", equalTo("1"))
+                .withQueryParam("forecast_days", equalTo("4"))
                 .withQueryParam("timezone", equalTo("Europe/Berlin"))
                 .withQueryParam("current", equalTo("temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m"))
-                .withQueryParam("daily", equalTo("temperature_2m_max,temperature_2m_min,sunset"))
-                .withQueryParam("hourly", equalTo("temperature_2m,precipitation_probability")));
+                .withQueryParam("daily", equalTo("temperature_2m_max,temperature_2m_min,sunset,weather_code"))
+                .withQueryParam("hourly", equalTo("temperature_2m,precipitation_probability"))
+                // No `models` param: see FORECAST_DAYS's javadoc in
+                // OpenMeteoWeatherProvider for the live-verified reasoning
+                // (pinning models=icon_d2 truncates daily data beyond its
+                // ~2-day horizon once forecast_days is 4).
+                .withQueryParam("models", absent()));
     }
 
     private static String readFixture() {
