@@ -18,6 +18,6 @@ class HouseholdPropertiesTest {
 
     @Test
     void bindsMembersFromApplicationYml() {
-        assertThat(householdProperties.members()).containsExactly("Alice", "Bob");
+        assertThat(householdProperties.members()).containsExactly("Alice", "Bob", "Charlie", "Diana");
     }
 }
