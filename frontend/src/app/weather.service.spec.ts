@@ -42,13 +42,34 @@ describe('WeatherService', () => {
     expect(snapshot?.highTemperature).toBe(21);
     expect(snapshot?.lowTemperature).toBe(12.3);
     expect(snapshot?.hourly).toEqual([
-      { hour: 14, temperature: 18.5, rainProbability: 10 },
-      { hour: 15, temperature: 19.1, rainProbability: 15 },
+      { hour: 14, temperature: 18.5, rainProbability: 10, rainAmountMm: 0.0 },
+      { hour: 15, temperature: 19.1, rainProbability: 15, rainAmountMm: 0.4 },
     ]);
     expect(snapshot?.outlook).toEqual([
-      { date: '2026-09-27', conditionText: 'Leichter Regen', highTemperature: 19.8, lowTemperature: 8.4 },
-      { date: '2026-09-28', conditionText: 'Gewitter', highTemperature: 17.5, lowTemperature: 7.1 },
-      { date: '2026-09-29', conditionText: 'Überwiegend klar', highTemperature: 22.1, lowTemperature: 10.6 },
+      {
+        date: '2026-09-27',
+        conditionText: 'Leichter Regen',
+        highTemperature: 19.8,
+        lowTemperature: 8.4,
+        rainProbability: 20,
+        rainAmountMm: 1.2,
+      },
+      {
+        date: '2026-09-28',
+        conditionText: 'Gewitter',
+        highTemperature: 17.5,
+        lowTemperature: 7.1,
+        rainProbability: 90,
+        rainAmountMm: 8.5,
+      },
+      {
+        date: '2026-09-29',
+        conditionText: 'Überwiegend klar',
+        highTemperature: 22.1,
+        lowTemperature: 10.6,
+        rainProbability: 5,
+        rainAmountMm: 0.3,
+      },
     ]);
     expect(snapshot?.humidityPercent).toBe(62);
     expect(snapshot?.windSpeedKmh).toBe(11.4);
@@ -97,13 +118,34 @@ describe('WeatherService', () => {
       highTemperature: 21,
       lowTemperature: 12.3,
       hourly: [
-        { hour: 14, temperature: 18.5, rainProbability: 10 },
-        { hour: 15, temperature: 19.1, rainProbability: 15 },
+        { hour: 14, temperature: 18.5, rainProbability: 10, rainAmountMm: 0.0 },
+        { hour: 15, temperature: 19.1, rainProbability: 15, rainAmountMm: 0.4 },
       ],
       outlook: [
-        { date: '2026-09-27', conditionText: 'Leichter Regen', highTemperature: 19.8, lowTemperature: 8.4 },
-        { date: '2026-09-28', conditionText: 'Gewitter', highTemperature: 17.5, lowTemperature: 7.1 },
-        { date: '2026-09-29', conditionText: 'Überwiegend klar', highTemperature: 22.1, lowTemperature: 10.6 },
+        {
+          date: '2026-09-27',
+          conditionText: 'Leichter Regen',
+          highTemperature: 19.8,
+          lowTemperature: 8.4,
+          rainProbability: 20,
+          rainAmountMm: 1.2,
+        },
+        {
+          date: '2026-09-28',
+          conditionText: 'Gewitter',
+          highTemperature: 17.5,
+          lowTemperature: 7.1,
+          rainProbability: 90,
+          rainAmountMm: 8.5,
+        },
+        {
+          date: '2026-09-29',
+          conditionText: 'Überwiegend klar',
+          highTemperature: 22.1,
+          lowTemperature: 10.6,
+          rainProbability: 5,
+          rainAmountMm: 0.3,
+        },
       ],
       humidityPercent: 62,
       windSpeedKmh: 11.4,
@@ -119,8 +161,17 @@ describe('WeatherService', () => {
       conditionText: 'Regen',
       highTemperature: 17,
       lowTemperature: 10,
-      hourly: [{ hour: 9, temperature: 16.2, rainProbability: 80 }],
-      outlook: [{ date: '2026-09-27', conditionText: 'Bedeckt', highTemperature: 16, lowTemperature: 9.5 }],
+      hourly: [{ hour: 9, temperature: 16.2, rainProbability: 80, rainAmountMm: 2.1 }],
+      outlook: [
+        {
+          date: '2026-09-27',
+          conditionText: 'Bedeckt',
+          highTemperature: 16,
+          lowTemperature: 9.5,
+          rainProbability: 65,
+          rainAmountMm: 3.1,
+        },
+      ],
       humidityPercent: 88,
       windSpeedKmh: 22.7,
       sunset: '2026-09-26T19:32:00',

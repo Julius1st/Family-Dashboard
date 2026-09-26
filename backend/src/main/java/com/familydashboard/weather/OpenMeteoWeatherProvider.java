@@ -92,13 +92,44 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
     private static final String CURRENT_FIELDS = "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m";
 
     /**
-     * {@code weather_code} added for this ticket: today's condition text
-     * already comes from {@code current.weather_code}, but the 3-day outlook
-     * needs each future day's own condition, which only exists at the daily
-     * level (there's no "current" for a future day).
+     * {@code weather_code} added in an earlier ticket: today's condition
+     * text already comes from {@code current.weather_code}, but the 3-day
+     * outlook needs each future day's own condition, which only exists at
+     * the daily level (there's no "current" for a future day).
+     *
+     * <p>{@code precipitation_probability_max}/{@code precipitation_sum}
+     * added for the "rain risk + expected rain amount" feature request —
+     * live-verified against the real Open-Meteo API (same live-check
+     * discipline as this class's other Open-Meteo-shape decisions, e.g.
+     * {@link #FORECAST_DAYS}'s own javadoc): a request for both fields
+     * against Karlsruhe's coordinates, and separately against a
+     * consistently-rainy location (Bergen, Norway — chosen because
+     * Karlsruhe's own live forecast at verification time was a dry
+     * stretch, all zeros, which proves the fields exist but not that they
+     * carry sensible non-zero data), returned e.g. {@code
+     * precipitation_sum: [1.90, 0.00, 6.60, 1.30]} (unit {@code "mm"}) and
+     * {@code precipitation_probability_max: [100, 71, 100, 20]} (unit
+     * {@code "%"}) — confirming both field names and that they carry real,
+     * sensible values.
      */
-    private static final String DAILY_FIELDS = "temperature_2m_max,temperature_2m_min,sunset,weather_code";
-    private static final String HOURLY_FIELDS = "temperature_2m,precipitation_probability";
+    private static final String DAILY_FIELDS =
+            "temperature_2m_max,temperature_2m_min,sunset,weather_code,precipitation_probability_max,precipitation_sum";
+
+    /**
+     * {@code precipitation} added alongside {@code precipitation_probability}
+     * for the same "rain risk + expected rain amount" feature request as
+     * {@link #DAILY_FIELDS}'s new fields, but at the hourly level (today's
+     * strip). Live-verified the same way: a real request against Karlsruhe's
+     * coordinates returned a {@code hourly_units.precipitation: "mm"} entry
+     * and a fully populated {@code hourly.precipitation} array (values were
+     * {@code 0.00} for Karlsruhe's own dry stretch at verification time; the
+     * same Bergen, Norway check used for the daily fields above also showed
+     * real non-zero hourly values, e.g. {@code 0.10}/{@code 1.80}) —
+     * confirming this is the correct field name, distinct from {@code
+     * precipitation_probability} (risk %, already in use) and carrying an
+     * actual depth in millimeters, not another risk percentage.
+     */
+    private static final String HOURLY_FIELDS = "temperature_2m,precipitation_probability,precipitation";
 
     private final RestClient restClient;
     private final WeatherProperties weatherProperties;
@@ -183,7 +214,8 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
             forecasts.add(new HourlyForecast(
                     dateTime.getHour(),
                     hourly.temperature2m().get(i),
-                    hourly.precipitationProbability().get(i)));
+                    hourly.precipitationProbability().get(i),
+                    hourly.precipitation().get(i)));
         }
         return forecasts;
     }
@@ -203,7 +235,9 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
                     LocalDate.parse(daily.time().get(i)),
                     WeatherConditionTexts.forCode(daily.weatherCode().get(i)),
                     daily.temperature2mMax().get(i),
-                    daily.temperature2mMin().get(i)));
+                    daily.temperature2mMin().get(i),
+                    daily.precipitationProbabilityMax().get(i),
+                    daily.precipitationSum().get(i)));
         }
         return outlook;
     }
@@ -233,13 +267,16 @@ class OpenMeteoWeatherProvider implements WeatherProvider {
             @JsonProperty("temperature_2m_max") List<Double> temperature2mMax,
             @JsonProperty("temperature_2m_min") List<Double> temperature2mMin,
             List<String> sunset,
-            @JsonProperty("weather_code") List<Integer> weatherCode) {
+            @JsonProperty("weather_code") List<Integer> weatherCode,
+            @JsonProperty("precipitation_probability_max") List<Integer> precipitationProbabilityMax,
+            @JsonProperty("precipitation_sum") List<Double> precipitationSum) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Hourly(
             List<String> time,
             @JsonProperty("temperature_2m") List<Double> temperature2m,
-            @JsonProperty("precipitation_probability") List<Integer> precipitationProbability) {
+            @JsonProperty("precipitation_probability") List<Integer> precipitationProbability,
+            List<Double> precipitation) {
     }
 }

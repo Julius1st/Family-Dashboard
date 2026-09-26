@@ -49,17 +49,38 @@ describe('WeatherPanel', () => {
       highTemperature: 21,
       lowTemperature: 12.3,
       hourly: [
-        { hour: 9, temperature: 16, rainProbability: 10 },
-        { hour: 11, temperature: 18, rainProbability: 0 },
-        { hour: 13, temperature: 21, rainProbability: 0 },
-        { hour: 15, temperature: 21, rainProbability: 10 },
-        { hour: 17, temperature: 19, rainProbability: 60 },
-        { hour: 19, temperature: 16, rainProbability: 70 },
+        { hour: 9, temperature: 16, rainProbability: 10, rainAmountMm: 0.0 },
+        { hour: 11, temperature: 18, rainProbability: 0, rainAmountMm: 0.0 },
+        { hour: 13, temperature: 21, rainProbability: 0, rainAmountMm: 0.0 },
+        { hour: 15, temperature: 21, rainProbability: 10, rainAmountMm: 0.2 },
+        { hour: 17, temperature: 19, rainProbability: 60, rainAmountMm: 1.8 },
+        { hour: 19, temperature: 16, rainProbability: 70, rainAmountMm: 2.4 },
       ],
       outlook: [
-        { date: '2026-09-27', conditionText: 'Leichter Regen', highTemperature: 19.8, lowTemperature: 8.4 },
-        { date: '2026-09-28', conditionText: 'Gewitter', highTemperature: 17.5, lowTemperature: 7.1 },
-        { date: '2026-09-29', conditionText: 'Überwiegend klar', highTemperature: 22.1, lowTemperature: 10.6 },
+        {
+          date: '2026-09-27',
+          conditionText: 'Leichter Regen',
+          highTemperature: 19.8,
+          lowTemperature: 8.4,
+          rainProbability: 20,
+          rainAmountMm: 1.2,
+        },
+        {
+          date: '2026-09-28',
+          conditionText: 'Gewitter',
+          highTemperature: 17.5,
+          lowTemperature: 7.1,
+          rainProbability: 90,
+          rainAmountMm: 8.5,
+        },
+        {
+          date: '2026-09-29',
+          conditionText: 'Überwiegend klar',
+          highTemperature: 22.1,
+          lowTemperature: 10.6,
+          rainProbability: 5,
+          rainAmountMm: 0.3,
+        },
       ],
       humidityPercent: 62,
       windSpeedKmh: 11.4,
@@ -116,6 +137,8 @@ describe('WeatherPanel', () => {
     expect(zeroRainHour.querySelector('.weather-panel__rain-percent')?.classList).not.toContain(
       'weather-panel__rain-percent--high',
     );
+    // Expected rain amount alongside the probability, German-locale-formatted (comma decimal, "l/m²" unit).
+    expect(zeroRainHour.querySelector('.weather-panel__rain-amount')?.textContent?.trim()).toBe('0,0 l/m²');
 
     // >=50% rain gets the "high" accent treatment on both the bar and the percentage text.
     const highRainHour = hours[4];
@@ -127,6 +150,7 @@ describe('WeatherPanel', () => {
       'weather-panel__rain-percent--high',
     );
     expect(highRainHour.querySelector<HTMLElement>('.weather-panel__rain-fill')?.style.height).toBe('18px');
+    expect(highRainHour.querySelector('.weather-panel__rain-amount')?.textContent?.trim()).toBe('1,8 l/m²');
 
     // Stats row: humidity/wind/sunset, formatted (no raw ISO string leaking through).
     const stats = Array.from(compiled.querySelectorAll<HTMLElement>('.weather-panel__stat'));
@@ -138,8 +162,8 @@ describe('WeatherPanel', () => {
     expect(stats[2].textContent).toContain('Sonnenuntergang');
     expect(stats[2].querySelector('.weather-panel__stat-value')?.textContent?.trim()).toBe('19:42');
 
-    // 3-day outlook: one compact row per day, below the stats row, no
-    // hourly/rain elements reused inside it.
+    // 3-day outlook: one row per day, below the stats row, each with a
+    // weekday/condition/hi-lo line and a rain-risk/rain-amount line.
     const outlookRows = Array.from(compiled.querySelectorAll<HTMLElement>('.weather-panel__outlook-row'));
     expect(outlookRows.length).toBe(3);
     expect(outlookRows[0].querySelector('.weather-panel__outlook-day')?.textContent?.trim()).toBe('So');
@@ -147,14 +171,35 @@ describe('WeatherPanel', () => {
       'Leichter Regen',
     );
     expect(outlookRows[0].querySelector('.weather-panel__outlook-hilo')?.textContent?.trim()).toBe('20° / 8°');
+    expect(outlookRows[0].querySelector('.weather-panel__outlook-rain-risk')?.textContent?.trim()).toBe('20%');
+    expect(outlookRows[0].querySelector('.weather-panel__outlook-rain-risk')?.classList).not.toContain(
+      'weather-panel__outlook-rain-risk--high',
+    );
+    expect(outlookRows[0].querySelector('.weather-panel__outlook-rain-amount')?.textContent?.trim()).toBe(
+      '1,2 l/m²',
+    );
+
     expect(outlookRows[1].querySelector('.weather-panel__outlook-day')?.textContent?.trim()).toBe('Mo');
     expect(outlookRows[1].querySelector('.weather-panel__outlook-condition')?.textContent?.trim()).toBe('Gewitter');
     expect(outlookRows[1].querySelector('.weather-panel__outlook-hilo')?.textContent?.trim()).toBe('18° / 7°');
+    // >=50% day-level rain risk gets the same "high" accent as the hourly strip.
+    expect(outlookRows[1].querySelector('.weather-panel__outlook-rain-risk')?.textContent?.trim()).toBe('90%');
+    expect(outlookRows[1].querySelector('.weather-panel__outlook-rain-risk')?.classList).toContain(
+      'weather-panel__outlook-rain-risk--high',
+    );
+    expect(outlookRows[1].querySelector('.weather-panel__outlook-rain-amount')?.textContent?.trim()).toBe(
+      '8,5 l/m²',
+    );
+
     expect(outlookRows[2].querySelector('.weather-panel__outlook-day')?.textContent?.trim()).toBe('Di');
     expect(outlookRows[2].querySelector('.weather-panel__outlook-condition')?.textContent?.trim()).toBe(
       'Überwiegend klar',
     );
     expect(outlookRows[2].querySelector('.weather-panel__outlook-hilo')?.textContent?.trim()).toBe('22° / 11°');
+    expect(outlookRows[2].querySelector('.weather-panel__outlook-rain-risk')?.textContent?.trim()).toBe('5%');
+    expect(outlookRows[2].querySelector('.weather-panel__outlook-rain-amount')?.textContent?.trim()).toBe(
+      '0,3 l/m²',
+    );
   });
 
   it('marks a stale snapshot visibly while still showing its last-known-good numbers, not blanking the widget', async () => {
@@ -188,10 +233,10 @@ describe('WeatherPanel', () => {
     configureWith(
       freshSnapshot({
         hourly: [
-          { hour: 9, temperature: 16, rainProbability: 10 },
-          { hour: 15, temperature: 21, rainProbability: 10 },
-          { hour: 16, temperature: 20, rainProbability: 20 },
-          { hour: 17, temperature: 19, rainProbability: 60 },
+          { hour: 9, temperature: 16, rainProbability: 10, rainAmountMm: 0.0 },
+          { hour: 15, temperature: 21, rainProbability: 10, rainAmountMm: 0.1 },
+          { hour: 16, temperature: 20, rainProbability: 20, rainAmountMm: 0.3 },
+          { hour: 17, temperature: 19, rainProbability: 60, rainAmountMm: 1.5 },
         ],
       }),
     );

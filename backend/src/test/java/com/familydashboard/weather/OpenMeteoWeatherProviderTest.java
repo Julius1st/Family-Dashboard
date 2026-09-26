@@ -32,10 +32,11 @@ import com.github.tomakehurst.wiremock.WireMockServer;
  * environment's egress firewall was found, while implementing the 3-day
  * outlook ticket, to actually reach {@code api.open-meteo.com} live — used
  * one-off to empirically verify the {@code models=icon_d2} vs. default
- * {@code best_match} question, see {@code OpenMeteoWeatherProvider}'s {@code
- * FORECAST_DAYS} javadoc. That doesn't change this test's own approach: it
- * still uses WireMock, never the live API, for determinism and to keep
- * running offline.)
+ * {@code best_match} question, and again for the rain-risk/rain-amount
+ * fields' exact names (see {@code OpenMeteoWeatherProvider}'s {@code
+ * FORECAST_DAYS} and {@code DAILY_FIELDS}/{@code HOURLY_FIELDS} javadocs).
+ * That doesn't change this test's own approach: it still uses WireMock,
+ * never the live API, for determinism and to keep running offline.)
  *
  * <p><b>Honesty note on the fixture:</b> {@code
  * weather/open-meteo-response.json} is a hand-constructed, realistic
@@ -93,11 +94,17 @@ class OpenMeteoWeatherProviderTest {
         assertThat(snapshot.hourly().get(0).hour()).isEqualTo(0);
         assertThat(snapshot.hourly().get(0).temperature()).isEqualTo(10.1);
         assertThat(snapshot.hourly().get(0).rainProbability()).isEqualTo(5);
+        assertThat(snapshot.hourly().get(0).rainAmountMm()).isEqualTo(0.0);
         assertThat(snapshot.hourly().get(13).hour()).isEqualTo(13);
         assertThat(snapshot.hourly().get(13).temperature()).isEqualTo(20.6);
         assertThat(snapshot.hourly().get(13).rainProbability()).isEqualTo(5);
+        assertThat(snapshot.hourly().get(13).rainAmountMm()).isEqualTo(0.0);
         assertThat(snapshot.hourly().get(18).hour()).isEqualTo(18);
         assertThat(snapshot.hourly().get(18).rainProbability()).isEqualTo(30);
+        // Fixture's hourly.precipitation[18] = 0.4 (mm) - distinct from the
+        // rain-PROBABILITY at the same index (30%), proving these two
+        // fields are mapped independently, not one derived from the other.
+        assertThat(snapshot.hourly().get(18).rainAmountMm()).isEqualTo(0.4);
         assertThat(snapshot.hourly().get(23).hour()).isEqualTo(23);
 
         // The 3-day outlook: fixture's daily block has 4 entries (today +
@@ -117,16 +124,22 @@ class OpenMeteoWeatherProviderTest {
         assertThat(tomorrow.conditionText()).isEqualTo("Leichter Regen"); // WMO code 61, via WeatherConditionTexts
         assertThat(tomorrow.highTemperature()).isEqualTo(19.8);
         assertThat(tomorrow.lowTemperature()).isEqualTo(8.4);
+        assertThat(tomorrow.rainProbability()).isEqualTo(20);
+        assertThat(tomorrow.rainAmountMm()).isEqualTo(1.2);
 
         DailyForecast dayAfterTomorrow = snapshot.outlook().get(1);
         assertThat(dayAfterTomorrow.conditionText()).isEqualTo("Gewitter"); // WMO code 95
         assertThat(dayAfterTomorrow.highTemperature()).isEqualTo(17.5);
         assertThat(dayAfterTomorrow.lowTemperature()).isEqualTo(7.1);
+        assertThat(dayAfterTomorrow.rainProbability()).isEqualTo(90);
+        assertThat(dayAfterTomorrow.rainAmountMm()).isEqualTo(8.5);
 
         DailyForecast thirdDay = snapshot.outlook().get(2);
         assertThat(thirdDay.conditionText()).isEqualTo("Überwiegend klar"); // WMO code 1
         assertThat(thirdDay.highTemperature()).isEqualTo(22.1);
         assertThat(thirdDay.lowTemperature()).isEqualTo(10.6);
+        assertThat(thirdDay.rainProbability()).isEqualTo(5);
+        assertThat(thirdDay.rainAmountMm()).isEqualTo(0.3);
 
         // fetchedAt is our own bookkeeping (not an upstream field) - assert
         // it was stamped during this call, not any exact value.
@@ -148,8 +161,10 @@ class OpenMeteoWeatherProviderTest {
                 .withQueryParam("forecast_days", equalTo("4"))
                 .withQueryParam("timezone", equalTo("Europe/Berlin"))
                 .withQueryParam("current", equalTo("temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m"))
-                .withQueryParam("daily", equalTo("temperature_2m_max,temperature_2m_min,sunset,weather_code"))
-                .withQueryParam("hourly", equalTo("temperature_2m,precipitation_probability"))
+                .withQueryParam("daily", equalTo(
+                        "temperature_2m_max,temperature_2m_min,sunset,weather_code,"
+                                + "precipitation_probability_max,precipitation_sum"))
+                .withQueryParam("hourly", equalTo("temperature_2m,precipitation_probability,precipitation"))
                 // No `models` param: see FORECAST_DAYS's javadoc in
                 // OpenMeteoWeatherProvider for the live-verified reasoning
                 // (pinning models=icon_d2 truncates daily data beyond its

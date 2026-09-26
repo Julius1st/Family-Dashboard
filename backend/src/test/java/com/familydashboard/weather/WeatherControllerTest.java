@@ -43,11 +43,11 @@ class WeatherControllerTest {
                 "Bedeckt",
                 21.3,
                 9.0,
-                List.of(new HourlyForecast(13, 20.6, 5), new HourlyForecast(14, 21.0, 10)),
+                List.of(new HourlyForecast(13, 20.6, 5, 0.0), new HourlyForecast(14, 21.0, 10, 0.4)),
                 List.of(
-                        new DailyForecast(LocalDate.of(2026, 9, 27), "Leichter Regen", 19.8, 8.4),
-                        new DailyForecast(LocalDate.of(2026, 9, 28), "Gewitter", 17.5, 7.1),
-                        new DailyForecast(LocalDate.of(2026, 9, 29), "Überwiegend klar", 22.1, 10.6)),
+                        new DailyForecast(LocalDate.of(2026, 9, 27), "Leichter Regen", 19.8, 8.4, 20, 1.2),
+                        new DailyForecast(LocalDate.of(2026, 9, 28), "Gewitter", 17.5, 7.1, 90, 8.5),
+                        new DailyForecast(LocalDate.of(2026, 9, 29), "Überwiegend klar", 22.1, 10.6, 5, 0.3)),
                 62,
                 11.2,
                 LocalDateTime.of(2026, 9, 26, 19, 42),
@@ -66,12 +66,16 @@ class WeatherControllerTest {
                 .andExpect(jsonPath("$.hourly[0].hour").value(13))
                 .andExpect(jsonPath("$.hourly[0].temperature").value(20.6))
                 .andExpect(jsonPath("$.hourly[0].rainProbability").value(5))
+                .andExpect(jsonPath("$.hourly[0].rainAmountMm").value(0.0))
                 .andExpect(jsonPath("$.hourly[1].hour").value(14))
+                .andExpect(jsonPath("$.hourly[1].rainAmountMm").value(0.4))
                 .andExpect(jsonPath("$.outlook").isArray())
                 .andExpect(jsonPath("$.outlook[0].date").value("2026-09-27"))
                 .andExpect(jsonPath("$.outlook[0].conditionText").value("Leichter Regen"))
                 .andExpect(jsonPath("$.outlook[0].highTemperature").value(19.8))
                 .andExpect(jsonPath("$.outlook[0].lowTemperature").value(8.4))
+                .andExpect(jsonPath("$.outlook[0].rainProbability").value(20))
+                .andExpect(jsonPath("$.outlook[0].rainAmountMm").value(1.2))
                 .andExpect(jsonPath("$.outlook[2].date").value("2026-09-29"))
                 .andExpect(jsonPath("$.humidityPercent").value(62))
                 .andExpect(jsonPath("$.windSpeedKmh").value(11.2))
@@ -89,8 +93,8 @@ class WeatherControllerTest {
                 "Leichter Regen",
                 17.0,
                 10.0,
-                List.of(new HourlyForecast(9, 14.5, 40)),
-                List.of(new DailyForecast(LocalDate.of(2026, 9, 27), "Bedeckt", 16.0, 9.5)),
+                List.of(new HourlyForecast(9, 14.5, 40, 0.9)),
+                List.of(new DailyForecast(LocalDate.of(2026, 9, 27), "Bedeckt", 16.0, 9.5, 65, 3.1)),
                 70,
                 8.5,
                 LocalDateTime.of(2026, 9, 26, 19, 40),

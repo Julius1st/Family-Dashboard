@@ -40,6 +40,25 @@ const TIME_FORMATTER = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minut
  */
 const WEEKDAY_FORMATTER = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
 
+/**
+ * Rainfall depth formatter for both the hourly strip's per-hour amount and
+ * the 3-day outlook's per-day total (both backend fields are `rainAmountMm`,
+ * in millimeters). German weather reporting conventionally expresses this
+ * as "l/m²" (liters per square meter) — numerically identical to
+ * millimeters, but a less ambiguous unit label for a German-language
+ * display than a bare "mm" or "L" would be — per the feature request that
+ * added these fields. Formatted with a German-locale `Intl.NumberFormat`
+ * (comma decimal separator, e.g. "1,3 l/m²") for the same reason
+ * `WEEKDAY_FORMATTER`/`TIME_FORMATTER` hardcode `de-DE`: this project's
+ * established "hardcoded German locale, no Angular DatePipe/i18n
+ * registration" convention, extended here to numbers.
+ */
+const RAIN_AMOUNT_FORMATTER = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function formatRainAmount(mm: number): string {
+  return `${RAIN_AMOUNT_FORMATTER.format(mm)} l/m²`;
+}
+
 /** One hourly-strip cell's fully-derived view model — never stored, only ever produced by `hourly()` below. */
 interface HourlyCell {
   /** Zero-padded hour label, e.g. "09". */
@@ -49,13 +68,17 @@ interface HourlyCell {
   readonly rainBarHeightPx: number;
   /** `true` at/above `RAIN_HIGH_THRESHOLD_PERCENT` — drives the bar-fill/percentage-text accent color. */
   readonly rainHigh: boolean;
+  /** Pre-formatted expected rain amount for that hour, e.g. "0,4 l/m²". */
+  readonly rainAmountLabel: string;
 }
 
 /**
- * One compact "next 3 days" outlook row's fully-derived view model — never
- * stored, only ever produced by `outlook()` below. Deliberately has no
- * hourly/rain fields: "No hourly display, but values for the whole day" per
- * the feature request this section implements.
+ * One "next 3 days" outlook row's fully-derived view model — never stored,
+ * only ever produced by `outlook()` below. Deliberately has no hourly
+ * breakdown fields: "No hourly display, but values for the whole day" per
+ * the original feature request this section implements — `rainRiskLabel`/
+ * `rainAmountLabel` below are still whole-day summaries (the day's overall
+ * risk/total), not an hour-by-hour rundown.
  */
 interface OutlookRow {
   /** The day's ISO date string, used as the `@for` track key. */
@@ -65,6 +88,12 @@ interface OutlookRow {
   readonly conditionText: string;
   /** Pre-formatted "hi / lo", e.g. "19° / 8°" — same "high / low" shape as `.weather-panel__hi-lo` for today. */
   readonly hiLoLabel: string;
+  /** Pre-formatted whole-day rain risk, e.g. "20%". */
+  readonly rainRiskLabel: string;
+  /** Pre-formatted whole-day expected rain amount, e.g. "1,3 l/m²". */
+  readonly rainAmountLabel: string;
+  /** `true` at/above `RAIN_HIGH_THRESHOLD_PERCENT` — same threshold/accent-color convention as the hourly strip's `HourlyCell.rainHigh`. */
+  readonly rainRiskHigh: boolean;
 }
 
 /**
@@ -92,7 +121,10 @@ interface OutlookRow {
  * "leaving the house" glance. Late at night this can legitimately be
  * fewer than 6 cells (no next-day data is fetched, per the plan doc's
  * "today only" scope) — the grid simply renders fewer cells rather than
- * wrapping or padding with placeholders.
+ * wrapping or padding with placeholders. Each cell now also shows the
+ * hour's expected rain amount ("l/m²") alongside its rain-probability
+ * percentage, per the same feature request that added the 3-day outlook's
+ * own rain-risk/rain-amount fields below.
  *
  * **Freshness marker**: normally shows the handoff's static "heute" copy
  * verbatim. When `stale` is true (design handoff, "Interactions &
@@ -116,12 +148,18 @@ interface OutlookRow {
  * framing, and a separate "unavailable" message would tell the user
  * nothing they could act on differently from "give it a moment."
  *
- * **3-day outlook**: a compact section below the stats row showing
- * tomorrow, the day after, and the day after that — one dense row per day
- * (weekday/condition/hi-lo), deliberately no hourly breakdown for these
- * (that's what `hourly` above is for, and only for today) per the feature
- * request that this fill the card's remaining room without turning into
- * another big block like the current-conditions section.
+ * **3-day outlook**: a section below the stats row showing tomorrow, the
+ * day after, and the day after that — one row per day, each split across
+ * two lines: weekday/condition/hi-lo, then that day's overall rain risk
+ * (%) and expected rain amount ("l/m²" — see `formatRainAmount`).
+ * Deliberately no hour-by-hour breakdown for these days (that's what
+ * `hourly` above is for, and only for today); the two ADDED fields here are
+ * still whole-day summaries, not a step back toward an hourly view. A
+ * follow-up feature request explicitly asked for genuine legibility/density
+ * over hitting a specific row-height target (an earlier, padding-heavy pass
+ * that only matched `.weather-panel__hour`'s height was reverted), so this
+ * layout is sized to what the now-5-data-point-per-day content actually
+ * needs, not a fixed budget.
  */
 @Component({
   selector: 'app-weather-panel',
@@ -178,6 +216,9 @@ export class WeatherPanel {
       weekdayLabel: WEEKDAY_FORMATTER.format(new Date(day.date)),
       conditionText: day.conditionText,
       hiLoLabel: `${this.formatTemperature(day.highTemperature)} / ${this.formatTemperature(day.lowTemperature)}`,
+      rainRiskLabel: `${day.rainProbability}%`,
+      rainAmountLabel: formatRainAmount(day.rainAmountMm),
+      rainRiskHigh: day.rainProbability >= RAIN_HIGH_THRESHOLD_PERCENT,
     };
   }
 }
@@ -190,5 +231,6 @@ function toHourlyCell(forecast: HourlyForecast): HourlyCell {
     rainProbability: forecast.rainProbability,
     rainBarHeightPx: Math.round(forecast.rainProbability * RAIN_BAR_PX_PER_PERCENT),
     rainHigh,
+    rainAmountLabel: formatRainAmount(forecast.rainAmountMm),
   };
 }

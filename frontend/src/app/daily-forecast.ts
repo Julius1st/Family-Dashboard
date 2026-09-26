@@ -3,7 +3,8 @@
  * widget's compact "next 3 days" outlook section — no hourly breakdown.
  *
  * Mirrors the backend's `com.familydashboard.weather.DailyForecast` record
- * exactly: `{ date, conditionText, highTemperature, lowTemperature }`.
+ * exactly: `{ date, conditionText, highTemperature, lowTemperature,
+ * rainProbability, rainAmountMm }`.
  */
 export interface DailyForecast {
   /**
@@ -20,4 +21,15 @@ export interface DailyForecast {
   readonly highTemperature: number;
   /** That day's forecast low in degrees Celsius. */
   readonly lowTemperature: number;
+  /**
+   * That day's overall forecast chance of precipitation, 0-100 (percent) —
+   * the day-level equivalent of `HourlyForecast.rainProbability`.
+   */
+  readonly rainProbability: number;
+  /**
+   * That day's total forecast precipitation depth, in millimeters
+   * (equivalently, liters per square meter — displayed as "l/m²", the unit
+   * label German weather reporting conventionally uses for this).
+   */
+  readonly rainAmountMm: number;
 }

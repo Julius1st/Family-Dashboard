@@ -15,6 +15,21 @@ import java.time.LocalDate;
  *                         today's {@code conditionText}).
  * @param highTemperature that day's forecast high, in degrees Celsius.
  * @param lowTemperature  that day's forecast low, in degrees Celsius.
+ * @param rainProbability that day's overall forecast chance of
+ *                         precipitation, 0-100 (percent) — Open-Meteo's
+ *                         daily {@code precipitation_probability_max}, the
+ *                         day-level equivalent of {@link
+ *                         HourlyForecast#rainProbability()}.
+ * @param rainAmountMm    that day's total forecast precipitation depth, in
+ *                         millimeters (equivalently, liters per square
+ *                         meter — "l/m²", the unit label German weather
+ *                         reporting conventionally uses for this).
  */
-public record DailyForecast(LocalDate date, String conditionText, double highTemperature, double lowTemperature) {
+public record DailyForecast(
+        LocalDate date,
+        String conditionText,
+        double highTemperature,
+        double lowTemperature,
+        int rainProbability,
+        double rainAmountMm) {
 }

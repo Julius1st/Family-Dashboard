@@ -213,6 +213,20 @@
   color: var(--accent-rain-text);
 }
 
+/* Expected rain amount per hour ("l/m²" — see WeatherPanel's
+   formatRainAmount doc comment for the unit-label reasoning), added
+   alongside the existing rain-probability percentage above. Smaller/dimmer
+   than .weather-panel__rain-percent: the percentage is the primary "will it
+   rain" read, this is the supplementary "how much" figure. */
+.weather-panel__rain-amount {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ink-muted);
+}
+
 /* Stats row: 3 equal columns, uppercase mono label over mono value
    (handoff, Screen 2 "Stats row"). */
 .weather-panel__stats {
@@ -251,53 +265,41 @@
 }
 
 /* "Next 3 days" outlook section (below the stats row, at the bottom of the
-   card): one row per day — weekday, condition, hi/lo.  Deliberately no rain
-   bars/hourly breakdown here (that's what .weather-panel__hour above is
-   for, today only).
+   card): one row per day, each split across two lines —
+     1. weekday / condition / hi-lo (unchanged shape from before)
+     2. that day's overall rain risk (%) and expected rain amount ("l/m²")
+   Deliberately still no hour-by-hour breakdown here (that's what
+   .weather-panel__hour above is for, today only) — the second line is a
+   whole-day summary, same as the first, not a step back toward an hourly
+   view.
 
-   Sizing (follow-up feedback: the first, tighter pass "felt too compact" —
-   each row should feel about as tall as one .weather-panel__hour cell).
-   Verified by arithmetic (jsdom can't give real rendered measurements, so
-   this is the same declared-CSS-values sum this project has used before
-   for layout-only claims, not a rendered-pixel confirmation):
+   Sizing history: an earlier pass tried to pad each row out to match one
+   .weather-panel__hour cell's height; that was reverted as the wrong fix —
+   a follow-up feature request explicitly asked to add real information
+   (rain risk + amount) and prioritize legibility/density over hitting a
+   specific row-height number. So this sizing is just "comfortable for the
+   text it holds" (moderate padding, no arithmetic height target), not
+   pinned to any other element's size.
 
-   One .weather-panel__hour cell's total height, summing its own declared
-   CSS (flex column, gap 8px, 4 stacked children):
-     hour-label   font-size 14px, line-height 1   -> 14px
-     hour-temp    font-size 21px, line-height 1   -> 21px
-     rain-track   fixed height                    -> 30px
-     rain-percent font-size 13px, line-height 1   -> 13px
-     3 internal gaps x 8px                        -> 24px
-     total                                        = 102px
-
-   One .weather-panel__outlook-row's total height, summing its own declared
-   CSS below (single text line per row, no internal stack — the row's own
-   padding stands in for that internal 24px of gap):
-     tallest of day/condition/hilo's single line:
-       day       font-size 20px, line-height 1 -> 20px
-       condition font-size 18px, line-height 1 -> 18px
-       hilo      font-size 20px, line-height 1 -> 20px
-       -> max                                   = 20px
-     row padding-top + padding-bottom (40px each) = 80px
-     total                                        = 100px
-
-   100px vs. the hourly cell's 102px — a 2px (~2%) difference, well within
-   "roughly the same amount of space."
-
-   Three such rows are ~300px total, several times taller than the first,
-   tighter pass this replaces — reopening exactly the overflow risk class
-   the "3-day outlook" ticket already checked for at the smaller size (see
-   transit-weather-page.css's .transit-weather-page comment). `min-height:
-   0` + `overflow-y: auto` here is the same "let the excess scroll inside
-   its own fixed budget instead of spilling past the card" fix already
-   established by tasks-page.css's `.tasks-page__list` — applied to just
-   this section (not the whole card) so the header/current-conditions/
-   hourly strip/stats row above stay always visible even if this section
-   alone doesn't fully fit. */
+   Overflow-safety (re-checked, not assumed, after this redesign): the
+   `min-height: 0` + `overflow-y: auto` below (this section's own scrollable
+   budget within `.weather-panel`'s flex column — the same established
+   pattern as tasks-page.css's `.tasks-page__list`, so the header/current-
+   conditions/hourly strip/stats row above always stay visible even if this
+   section alone doesn't fully fit) still holds regardless of exactly how
+   tall this section's content is: `.weather-panel`'s other children (header/
+   current/hourly/stats) all keep the browser's default `min-height: auto`
+   floor, so this is still the ONLY child flexbox can actually shrink when
+   space runs short, and the excess still has an explicit scroll destination
+   instead of spilling past the card. If anything, this redesign's rows are
+   SHORTER than the previous pass's padding-driven ~100px rows (real content
+   height now, not padding filler), so this reopens no NEW overflow risk —
+   the modest one-line growth to .weather-panel__hour (its new rain-amount
+   line) doesn't change this either: any resulting deficit still lands on
+   this section first, per the same reasoning. */
 .weather-panel__outlook {
   display: flex;
   flex-direction: column;
-  gap: 6px;
   min-height: 0;
   overflow-y: auto;
   border-top: 1px solid var(--border-hairline);
@@ -305,31 +307,32 @@
 }
 
 .weather-panel__outlook-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+}
+
+.weather-panel__outlook-row:not(:last-child) {
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.weather-panel__outlook-top {
   display: grid;
   /* weekday / condition / hi-lo — condition gets the remaining space since
-     German condition text ("Mäßige Regenschauer") is by far the longest
-     of the three; weekday and hi-lo are both short, fixed-width labels.
-     34px (not the previous 28px): the weekday label's font-size grew
-     (13px -> 20px) as part of this same sizing pass, and 28px was sized
-     for the smaller font. */
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  /* `center`, not the previous `baseline`: the three pieces no longer
-     share one font-size, so baseline alignment would visibly stagger
-     them; center keeps the row looking like one unit. */
-  align-items: center;
+     German condition text ("Mäßige Regenschauer") is by far the longest of
+     the three; weekday and hi-lo are both short, fixed-width labels. */
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: baseline;
   gap: 10px;
-  /* 40px top + bottom — see this block's arithmetic above: this padding is
-     what actually reaches "about one hourly-cell's height," not the text
-     itself. */
-  padding: 40px 0;
 }
 
 .weather-panel__outlook-day {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 1;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
   color: var(--ink-muted);
 }
 
@@ -339,20 +342,63 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-sans);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.3;
   color: var(--ink-secondary);
 }
 
 .weather-panel__outlook-hilo {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.3;
   color: var(--ink-primary);
   white-space: nowrap;
+}
+
+/* Second line: whole-day rain risk + expected amount. Indented to align
+   under .weather-panel__outlook-condition (26px day column + 10px gap),
+   visually grouping it under that day's summary rather than the weekday
+   label. */
+.weather-panel__outlook-rain {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-left: 36px;
+}
+
+.weather-panel__outlook-rain-label {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.weather-panel__outlook-rain-risk {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink-secondary);
+}
+
+/* Same >=50% "high risk" accent convention as .weather-panel__rain-percent--high above. */
+.weather-panel__outlook-rain-risk--high {
+  color: var(--accent-rain-text);
+}
+
+.weather-panel__outlook-rain-amount {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--ink-muted);
 }
 
 .weather-panel__loading {

@@ -32,6 +32,7 @@
           <p class="weather-panel__rain-percent" [class.weather-panel__rain-percent--high]="hour.rainHigh">
             {{ hour.rainProbability }}%
           </p>
+          <p class="weather-panel__rain-amount">{{ hour.rainAmountLabel }}</p>
         </div>
       }
     </div>
@@ -54,9 +55,19 @@
     <div class="weather-panel__outlook">
       @for (day of outlook(); track day.date) {
         <div class="weather-panel__outlook-row">
-          <p class="weather-panel__outlook-day">{{ day.weekdayLabel }}</p>
-          <p class="weather-panel__outlook-condition">{{ day.conditionText }}</p>
-          <p class="weather-panel__outlook-hilo">{{ day.hiLoLabel }}</p>
+          <div class="weather-panel__outlook-top">
+            <p class="weather-panel__outlook-day">{{ day.weekdayLabel }}</p>
+            <p class="weather-panel__outlook-condition">{{ day.conditionText }}</p>
+            <p class="weather-panel__outlook-hilo">{{ day.hiLoLabel }}</p>
+          </div>
+          <div class="weather-panel__outlook-rain">
+            <span class="weather-panel__outlook-rain-label">Regen</span>
+            <span
+              class="weather-panel__outlook-rain-risk"
+              [class.weather-panel__outlook-rain-risk--high]="day.rainRiskHigh"
+            >{{ day.rainRiskLabel }}</span>
+            <span class="weather-panel__outlook-rain-amount">{{ day.rainAmountLabel }}</span>
+          </div>
         </div>
       }
     </div>
