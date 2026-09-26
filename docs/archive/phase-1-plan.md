@@ -1,12 +1,12 @@
 # Phase 1 Plan — Widget Framework Backend
 
-This breaks Phase 1 of [`docs/PLAN.md`](PLAN.md) ("Widget framework
+This breaks Phase 1 of [`../PLAN.md`](../PLAN.md) ("Widget framework
 backend — `Widget` contract, registry, `/api/widgets`, unit tests") into
-ticket-sized units of work. No `backend/` directory exists yet — Ticket 1 is
+ticket-sized units of work. No `../../backend` directory exists yet — Ticket 1 is
 the first code in this repo.
 
 Each ticket is implemented on its own branch via the implementer/reviewer
-loop described in [`CLAUDE.md`](../CLAUDE.md#workflow). Do the tickets in
+loop described in [`../../CLAUDE.md`](../../CLAUDE.md#workflow). Do the tickets in
 order — later tickets depend on earlier ones. This doc is meant to be
 self-contained: a fresh implementer agent should be able to work a ticket
 from this file alone, without needing prior conversation history.
@@ -21,7 +21,7 @@ ticket doesn't have to re-derive them:
 - Widget-related code lives under `com.familydashboard.widget`.
 - `start.spring.io` (Spring Initializr) may not be reachable behind this
   container's egress firewall — only Maven Central, GitHub, npm, Gradle
-  distributions, and the Anthropic API are allowlisted (see `CLAUDE.md`
+  distributions, and the Anthropic API are allowlisted (see `../../CLAUDE.md`
   Environment section). Build the Maven project by hand (`pom.xml` +
   wrapper) rather than depending on Initializr being reachable.
 - No real widget implementation exists yet — that's the Todo widget in
@@ -31,26 +31,26 @@ ticket doesn't have to re-derive them:
 
 ## Ticket 1 — Backend project scaffolding
 
-**Scope:** get a bootable, testable Spring Boot skeleton in `backend/`,
+**Scope:** get a bootable, testable Spring Boot skeleton in `../../backend`,
 with H2 file-persistent JPA wired up, and nothing else.
 
 **Implement:**
-- `backend/pom.xml`: Spring Boot 4.1 parent, Java 25, groupId/artifactId as
+- `../../backend/pom.xml`: Spring Boot 4.1 parent, Java 25, groupId/artifactId as
   above. Dependencies: `spring-boot-starter-web`,
   `spring-boot-starter-data-jpa`, `com.h2database:h2`,
   `spring-boot-starter-test`. Don't add anything beyond these without
   authorization (per `CLAUDE.md` boundary on dependencies).
 - Maven wrapper (`mvnw`, `mvnw.cmd`, `.mvn/wrapper/`) so the tool doesn't
-  need to be preinstalled, per `CLAUDE.md`.
+  need to be preinstalled, per `../../CLAUDE.md`.
 - `com.familydashboard.FamilyDashboardApplication` — the
   `@SpringBootApplication` main class.
-- `backend/src/main/resources/application.yml`: H2 in file-persistent mode
+- `../../backend/src/main/resources/application.yml`: H2 in file-persistent mode
   (e.g. a file under `backend/data/`), Spring Data JPA configured against
   it. Write the config in a JPA/Hibernate-portable way — no H2-specific SQL
   or dialect tricks — so switching to PostgreSQL later (per `docs/PLAN.md`)
   is a config change, not a rewrite. Set `ddl-auto` to something sensible
   for dev (`update`) since Flyway isn't introduced until PostgreSQL is.
-- Update `.gitignore`: `backend/target/`, the H2 data file(s) (e.g.
+- Update `../../.gitignore`: `backend/target/`, the H2 data file (s) (e.g.
   `backend/data/`).
 
 **Acceptance criteria:**
@@ -58,7 +58,7 @@ with H2 file-persistent JPA wired up, and nothing else.
 - `cd backend && ./mvnw spring-boot:run` boots the app and creates the
   H2 file-backed database on disk.
 - A minimal `@SpringBootTest` (context-load-only) test passes.
-- The commands in `CLAUDE.md` (`./mvnw test`, `./mvnw spring-boot:run`)
+- The commands in `../../CLAUDE.md` (`./mvnw test`, `./mvnw spring-boot:run`)
   work exactly as documented — don't diverge from them.
 
 ## Ticket 2 — CI skeleton (GitHub Actions, backend)
@@ -66,12 +66,12 @@ with H2 file-persistent JPA wired up, and nothing else.
 **Scope:** catch regressions from here on; depends on Ticket 1 existing.
 
 **Implement:**
-- `.github/workflows/backend-ci.yml`: on push and pull_request, set up
+- `../../.github/workflows/backend-ci.yml`: on push and pull_request, set up
   Java 25, run `cd backend && ./mvnw -B test`.
 
 **Acceptance criteria:**
 - Workflow runs and passes against Ticket 1's branch state.
-- Scoped to `backend/` only — no frontend job yet (that arrives in
+- Scoped to `../../backend` only — no frontend job yet (that arrives in
   Phase 2 when `frontend/` exists).
 
 ## Ticket 3 — `Widget` contract + registry

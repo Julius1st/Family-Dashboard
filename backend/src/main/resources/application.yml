@@ -17,3 +17,5 @@ household:
   members:
     - Alice
     - Bob
+    - Charlie
+    - Diana

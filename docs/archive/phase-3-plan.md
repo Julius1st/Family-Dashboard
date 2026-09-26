@@ -1,15 +1,15 @@
 # Phase 3 Plan — Todo Widget
 
-This breaks Phase 3 of [`docs/PLAN.md`](PLAN.md) ("Todo widget — first
+This breaks Phase 3 of [`../PLAN.md`](../PLAN.md) ("Todo widget — first
 real widget built on the framework — per-household-member CRUD lists,
 end-to-end") into ticket-sized units of work, the same way
-[`docs/phase-1-plan.md`](phase-1-plan.md) and
-[`docs/phase-2-plan.md`](phase-2-plan.md) did for Phases 1 and 2.
+[`phase-1-plan.md`](phase-1-plan.md) and
+[`phase-2-plan.md`](phase-2-plan.md) did for Phases 1 and 2.
 
 Phases 1 and 2 are done and merged into `main`. The backend exposes `GET
 /api/widgets` via a `Widget` contract + `WidgetRegistry` that
 auto-discovers Spring beans
-(`backend/src/main/java/com/familydashboard/widget/`). The frontend has a
+(`../../backend/src/main/java/com/familydashboard/widget`). The frontend has a
 `DashboardShell` component that fetches widgets via `WidgetService`
 (signal-based) and renders one tile per widget, resolved through a
 minimal type-keyed seam in `frontend/src/app/widget-tile-registry.ts`
@@ -17,12 +17,12 @@ minimal type-keyed seam in `frontend/src/app/widget-tile-registry.ts`
 generic `WidgetFallbackTile`). `NgComponentOutlet` passes each resolved
 tile component one input: `descriptor: WidgetDescriptor`.
 
-This is the first phase that spans both `backend/` and `frontend/`
+This is the first phase that spans both `../../backend` and `frontend/`
 (Phase 1 was backend-only, Phase 2 frontend-only), and the first widget
 to actually register into the seams Phases 1 and 2 built.
 
 Each ticket is implemented on its own branch via the implementer/reviewer
-loop described in [`CLAUDE.md`](../CLAUDE.md#workflow). Do the tickets in
+loop described in [`../../CLAUDE.md`](../../CLAUDE.md#workflow). Do the tickets in
 order — later tickets depend on earlier ones. This doc is meant to be
 self-contained: a fresh implementer agent should be able to work a ticket
 from this file alone, without needing prior conversation history.
@@ -32,7 +32,7 @@ from this file alone, without needing prior conversation history.
 These aren't fixed elsewhere in the repo yet; they're decided here so each
 ticket doesn't have to re-derive them:
 
-- **Household members**: `docs/PLAN.md` says these are "hardcoded in
+- **Household members**: `../PLAN.md` says these are "hardcoded in
   config for v1 (e.g. `application.yml`)." No such config exists yet.
   Since Todo is the only consumer so far, the member list lives in the
   Todo backend package as a `@ConfigurationProperties(prefix =
@@ -41,14 +41,14 @@ ticket doesn't have to re-derive them:
   real consumer" discipline `Widget` (Phase 1) and the tile registry
   (Phase 2) followed. If a second widget needs a member list later,
   that's when it gets promoted/shared.
-- **No new Maven dependency for validation**: `backend/pom.xml` has no
+- **No new Maven dependency for validation**: `../../backend/pom.xml` has no
   `spring-boot-starter-validation`. Per `CLAUDE.md`'s "don't add
   dependencies without authorization," validation (non-blank
   description, member must be one of the configured list) is done with
   plain code (`ResponseStatusException`), not Bean Validation
   annotations.
 - **REST shape**, all under `/api/todos` (owned entirely by the Todo
-  package, per "each widget owns its own endpoints" in `docs/PLAN.md`):
+  package, per "each widget owns its own endpoints" in `../PLAN.md`):
   - `GET /api/todos` → all items: `[{ id, householdMember, description,
     done }]`.
   - `GET /api/todos/members` → the configured household members (a
@@ -89,7 +89,7 @@ ticket doesn't have to re-derive them:
 - `TodoItem`, a JPA entity: `id` (generated), `householdMember`
   (String), `description` (String), `done` (boolean, default `false`).
   Written in a JPA/Hibernate-portable way (no H2-specific SQL), per
-  `docs/PLAN.md`'s persistence decision.
+  `../PLAN.md`'s persistence decision.
 - `TodoItemRepository extends JpaRepository<TodoItem, Long>`, with a
   finder suitable for listing all items (e.g. `findAllByOrderById`).
 
@@ -136,7 +136,7 @@ Ticket 4. Depends on Ticket 2.
 - A `TodoItem` TypeScript interface matching the backend DTO exactly:
   `{ id: number; householdMember: string; description: string; done:
   boolean }`. No `any`.
-- `TodoService` in `frontend/src/app/`: fetches `/api/todos` and
+- `TodoService` in `../../frontend/src/app`: fetches `/api/todos` and
   `/api/todos/members` into two signals, `items` and `members` (per
   `CLAUDE.md`'s "prefer signals over RxJS for component state" —
   consumers never see a raw `Observable`). Mutation methods `create`,
@@ -167,7 +167,7 @@ on Ticket 3.
   its items with a toggle-done control and a delete control, plus an
   add-item input. Touch-UI baseline applies: interactive targets ≥44px,
   no hover-only affordances (e.g. delete must be always visible/tappable,
-  not hover-revealed), per `CLAUDE.md`.
+  not hover-revealed), per `../../CLAUDE.md`.
 
 **Acceptance criteria:**
 - A `TestBed` test with a mocked `TodoService` verifies per-member

@@ -1,18 +1,18 @@
 # Frontend Redesign Plan — Kiosk UI
 
 This breaks the frontend redesign described in
-[`docs/design_handoff_family_dashboard/README.md`](design_handoff_family_dashboard/README.md)
-into ticket-sized units of work, the same way [`docs/phase-1-plan.md`](phase-1-plan.md)
-through [`docs/phase-4-plan.md`](phase-4-plan.md) did for each phase.
+[`../design_handoff_family_dashboard/README.md`](../design_handoff_family_dashboard/README.md)
+into ticket-sized units of work, the same way [`phase-1-plan.md`](phase-1-plan.md)
+through [`phase-4-plan.md`](phase-4-plan.md) did for each phase.
 
-The design handoff (`README.md` is the spec; `mockups.dc.html`/`support.js`
+The design handoff (`../../README.md` is the spec; `mockups.dc.html`/`support.js`
 are an HTML prototype for visual reference only, not code to copy) defines
 a dark, kiosk-styled two-page UI: **Aufgaben** (a per-household-member
 task board — the real Todo widget, redesigned) and **Abfahrten & Wetter**
 (departures + weather — Phase 5 widgets, not built yet). Both pages share
 one header (live clock, German date, a pill that switches pages).
 
-Today's frontend (`frontend/src/app/`) is Phase 2/3 scaffolding built
+Today's frontend (`../../frontend/src/app`) is Phase 2/3 scaffolding built
 before any of this was designed: `DashboardShell` renders every widget
 from `GET /api/widgets` as a generic tile in one grid, using
 `widget-tile-registry.ts` (a type-keyed `Record` resolving a widget id to
@@ -26,7 +26,7 @@ composition, which better fits "add a future widget in its own layout"
 than keeping one generic grid alive.
 
 Each ticket is implemented on its own branch via the implementer/reviewer
-loop described in [`CLAUDE.md`](../CLAUDE.md#workflow). Do the tickets in
+loop described in [`../../CLAUDE.md`](../../CLAUDE.md#workflow). Do the tickets in
 order — later tickets depend on earlier ones. This doc is meant to be
 self-contained: a fresh implementer agent should be able to work a ticket
 from this file alone, without needing prior conversation history.
@@ -38,7 +38,7 @@ from this file alone, without needing prior conversation history.
   exists now but its two slots (departures, weather) show a placeholder
   state until Phase 5 adds those widgets.
 - Widget-to-page/slot placement lives in a **frontend-only** static
-  config, not a backend change — `backend/`'s `Widget`/`WidgetDescriptor`
+  config, not a backend change — `../../backend`'s `Widget`/`WidgetDescriptor`
   contract (`{ id, displayName }`) is untouched by this whole effort.
 - Page switching is an **in-memory signal** (`activePage: 'tasks' |
   'transit'`), not Angular Router — matches the handoff's own "State"
@@ -56,7 +56,7 @@ from this file alone, without needing prior conversation history.
 - UI copy is **hardcoded German**, matching the handoff's copy exactly —
   no i18n framework.
 - Layout is **adaptive/responsive**, not the handoff's literal fixed
-  1280×800 canvas — `docs/PLAN.md` leaves the real kiosk hardware
+  1280×800 canvas — `../PLAN.md` leaves the real kiosk hardware
   undecided. Treat the handoff's pixel values as a *design language*
   (color tokens, type scale, spacing rhythm, component shapes) to
   preserve, while making the *containers* (grids/flex tracks) reflow
@@ -69,7 +69,7 @@ from this file alone, without needing prior conversation history.
 
 The full color table, type scale, radii, and spacing values are already
 fully specified in
-[`docs/design_handoff_family_dashboard/README.md`](design_handoff_family_dashboard/README.md)
+[`../design_handoff_family_dashboard/README.md`](../design_handoff_family_dashboard/README.md)
 — tickets reference that file directly rather than restating every value
 here. Implemented as CSS custom properties (e.g. `--bg-page`,
 `--ink-primary`, `--font-mono`, etc.) on `:root` in a new global
@@ -110,7 +110,7 @@ content yet.
 - Define the full color/spacing/radius token set from the handoff's
   README as CSS custom properties on `:root`.
 - Apply the dark theme globally (`bg/page` background, `ink/primary`
-  default text) via `frontend/src/styles.css`.
+  default text) via `../../frontend/src/styles.css`.
 
 **Acceptance criteria:**
 - Fonts load from same-origin assets (verify via network-independent
@@ -153,7 +153,7 @@ content yet.
 - `TransitWeatherPage`'s placeholders render without errors and clearly
   read as "not yet available," not broken/blank.
 - All interactive elements (nav pill items) meet the ≥44px touch baseline
-  from `CLAUDE.md`.
+  from `../../CLAUDE.md`.
 
 ## Ticket 3 — Tasks page: the per-member board
 
@@ -186,7 +186,7 @@ content yet.
 - No `any`; zoneless-compatible; all interactive targets ≥44px, no
   hover-only affordances (the design allows a hover background tint on
   the add-task button as a bonus, but it must remain fully usable
-  without hover, since this is a touch panel per `CLAUDE.md`).
+  without hover, since this is a touch panel per `../../CLAUDE.md`).
 
 ## Ticket 4 — Add-task dialog
 

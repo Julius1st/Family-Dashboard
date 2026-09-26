@@ -1,19 +1,19 @@
 # Phase 2 Plan — Dashboard Shell Frontend
 
-This breaks Phase 2 of [`docs/PLAN.md`](PLAN.md) ("Dashboard shell
+This breaks Phase 2 of [`../PLAN.md`](../PLAN.md) ("Dashboard shell
 frontend — dynamic widget loading from the API, component tests") into
-ticket-sized units of work, the same way [`docs/phase-1-plan.md`](phase-1-plan.md)
-did for Phase 1. No `frontend/` directory exists yet — Ticket 1 is the
+ticket-sized units of work, the same way [`phase-1-plan.md`](phase-1-plan.md)
+did for Phase 1. No `../../frontend` directory exists yet — Ticket 1 is the
 first frontend code in this repo.
 
-Phase 1 is done and merged into `main`: `backend/` exposes
+Phase 1 is done and merged into `main`: `../../backend` exposes
 `GET /api/widgets`, returning a JSON array of `WidgetDescriptor` objects —
 `{ "id": string, "displayName": string }` (see
 `backend/src/main/java/com/familydashboard/widget/WidgetDescriptor.java`
 and `WidgetController.java`).
 
 Each ticket is implemented on its own branch via the implementer/reviewer
-loop described in [`CLAUDE.md`](../CLAUDE.md#workflow). Do the tickets in
+loop described in [`../../CLAUDE.md`](../../CLAUDE.md#workflow). Do the tickets in
 order — later tickets depend on earlier ones. This doc is meant to be
 self-contained: a fresh implementer agent should be able to work a ticket
 from this file alone, without needing prior conversation history.
@@ -23,9 +23,9 @@ from this file alone, without needing prior conversation history.
 These aren't fixed elsewhere in the repo yet; they're decided here so each
 ticket doesn't have to re-derive them:
 
-- Angular 22 standalone workspace under `frontend/`, zoneless change
+- Angular 22 standalone workspace under `../../frontend`, zoneless change
   detection, strict mode, no `any` anywhere.
-- `@angular/cli` is a devDependency of `frontend/`, not relied on as a
+- `@angular/cli` is a devDependency of `../../frontend`, not relied on as a
   global install — the same self-contained spirit as the Maven wrapper in
   `backend/`.
 - Unlike `start.spring.io` (unreachable behind this container's egress
@@ -33,7 +33,7 @@ ticket doesn't have to re-derive them:
   Angular CLI directly (e.g. `npx @angular/cli@22 new`) rather than
   hand-rolling workspace config the way Ticket 1 of Phase 1 had to
   hand-roll Maven.
-- Per `CLAUDE.md`'s "prefer signals over RxJS for component state":
+- Per `../../CLAUDE.md`'s "prefer signals over RxJS for component state":
   `HttpClient` calls are wrapped so components consume a **signal**, never
   a raw `Observable` directly.
 - No real widget component exists yet — the Todo widget is Phase 3. Ticket
@@ -43,29 +43,29 @@ ticket doesn't have to re-derive them:
   framework now — same "don't speculate beyond what's driven by a real
   consumer" discipline Phase 1 applied to the `Widget` interface.
 - Touch-UI baseline (interactive targets ≥44px, no hover-dependent
-  behavior — per `CLAUDE.md` Conventions) applies from the start, even to
+  behavior — per `../../CLAUDE.md` Conventions) applies from the start, even to
   placeholder UI.
 - Bundling the Angular build into the Spring Boot jar is Phase 4
-  packaging, not Phase 2 — `frontend/` stays a standalone dev-server setup
+  packaging, not Phase 2 — `../../frontend` stays a standalone dev-server setup
   for now.
 
 ## Ticket 1 — Frontend project scaffolding
 
-**Scope:** a bootable, testable Angular skeleton in `frontend/`, with the
+**Scope:** a bootable, testable Angular skeleton in `../../frontend`, with the
 dev server proxying `/api` to the backend, and nothing else.
 
 **Implement:**
-- Angular 22 standalone workspace under `frontend/`: zoneless change
+- Angular 22 standalone workspace under `../../frontend`: zoneless change
   detection, strict mode, no `any`. Scaffold via the Angular CLI (`npx
   @angular/cli@22 new` or equivalent) rather than hand-writing config.
-- `package.json` scripts matching `CLAUDE.md` exactly: `npm test`, `npm
+- `package.json` scripts matching `../../CLAUDE.md` exactly: `npm test`, `npm
   start`.
 - Dev server proxy config (e.g. `proxy.conf.json`) so `npm start` proxies
   `/api` requests to `http://localhost:8080`, wired into the `start`
   script.
 - Minimal root `AppComponent` — just enough to prove the app boots. The
   real dashboard shell is Ticket 4; don't build it here.
-- `.gitignore` additions: `frontend/node_modules/`, the Angular CLI's
+- `../../.gitignore` additions: `frontend/node_modules/`, the Angular CLI's
   build output directory (e.g. `frontend/dist/`), and any Angular CLI
   cache directory it creates.
 
@@ -74,7 +74,7 @@ dev server proxying `/api` to the backend, and nothing else.
   e.g. "should create the app").
 - `cd frontend && npm start` serves the app and proxies `/api` calls to
   `:8080`.
-- The commands in `CLAUDE.md` (`npm test`, `npm start`) work exactly as
+- The commands in `../../CLAUDE.md` (`npm test`, `npm start`) work exactly as
   documented — don't diverge from them.
 
 ## Ticket 2 — CI skeleton (GitHub Actions, frontend)
@@ -83,7 +83,7 @@ dev server proxying `/api` to the backend, and nothing else.
 existing. Mirrors Phase 1's Ticket 2 for the backend.
 
 **Implement:**
-- `.github/workflows/frontend-ci.yml`, structured like the existing
+- `../../.github/workflows/frontend-ci.yml`, structured like the existing
   `.github/workflows/backend-ci.yml` (`on: push`/`pull_request`, single
   job): set up a pinned Node LTS version via `actions/setup-node@v4`
   (`cache: npm`), run `cd frontend && npm ci`, then run the test script
@@ -95,7 +95,7 @@ existing. Mirrors Phase 1's Ticket 2 for the backend.
 
 **Acceptance criteria:**
 - Workflow runs and passes against Ticket 1's branch state.
-- Scoped to `frontend/` only. `backend-ci.yml` is untouched.
+- Scoped to `../../frontend` only. `backend-ci.yml` is untouched.
 
 ## Ticket 3 — Widget API client
 
@@ -105,7 +105,7 @@ rendering yet — that's Ticket 4.
 **Implement:**
 - A `WidgetDescriptor` TypeScript interface matching the backend JSON
   shape exactly: `{ id: string; displayName: string }`. No `any`.
-- A `WidgetService` (or similar) in `frontend/src/app/` that calls `GET
+- A `WidgetService` (or similar) in `../../frontend/src/app` that calls `GET
   /api/widgets` via Angular's `HttpClient` and exposes the result to
   consumers as a **signal** (e.g. via `toSignal`/`resource()`) — not a raw
   `Observable`.
