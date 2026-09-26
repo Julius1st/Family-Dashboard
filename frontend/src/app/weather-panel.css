@@ -150,6 +150,44 @@
   gap: 8px;
 }
 
+/*
+ * Narrow-viewport fallback, added when the weather column stopped being a
+ * comfortable fixed 452px and became a proportional 1/3 share of the page
+ * row (see transit-weather-page.css's own "Narrow-end check" comment for
+ * the full arithmetic this is based on). At 6 columns, the weather
+ * column's width in roughly the 900-1200px viewport range genuinely isn't
+ * enough for every cell's content: e.g. `.weather-panel__hour-temp`
+ * ("21°", 21px font) needs ~38px and `.weather-panel__rain-amount` ("0,4
+ * l/m²", 11px font) needs ~53px per a rough monospace ~0.6em/character
+ * estimate (no real rendering available in this environment to measure
+ * exactly), both wider than the ~30px each column gets at the narrowest
+ * surviving two-column width. Dropping to 4 visible cells below 1200px
+ * gives each remaining cell meaningfully more room (~48-73px across that
+ * same range per the same estimate) — chosen over shrinking font sizes or
+ * dropping just the rain-amount line because it fixes every piece of a
+ * cell's content at once, and over further reducing to 3 columns because
+ * that would noticeably reduce how many hours the strip shows even at
+ * viewport widths where 4 already fit comfortably. Honesty note: at the
+ * very narrowest surviving two-column width (viewport just above 900px,
+ * where transit-weather-page.css's own breakpoint fully stacks the layout
+ * to 100% width instead), the ~48px this leaves for the ~53px rain-amount
+ * estimate is closer than a comfortable margin — within this estimate's
+ * own error bar, not a confidently-verified fit. That sliver is a known,
+ * accepted limitation rather than a silently ignored one: below 900px the
+ * layout stacks to full width anyway, so the actual window where this
+ * estimate's margin is thin is narrow (roughly 900-1000px of viewport
+ * width) rather than the whole 900-1200px range this media query covers.
+ */
+@media (max-width: 1200px) {
+  .weather-panel__hourly-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .weather-panel__hour:nth-child(n + 5) {
+    display: none;
+  }
+}
+
 .weather-panel__hour {
   display: flex;
   flex-direction: column;

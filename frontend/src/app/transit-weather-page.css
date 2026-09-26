@@ -5,18 +5,72 @@
 }
 
 /*
- * Handoff's Screen 2 body grid is `minmax(0,1fr) 452px` (departures fills
- * remaining width, weather is a fixed 452px column) — kept above the
- * responsive breakpoint below since it's still a landscape, tablet-and-up
- * kiosk display, per the redesign plan's "adaptive, not phone-width
- * responsive" decision. Below that width the two slots stack instead of
- * clipping/overflowing.
+ * Handoff's Screen 2 body grid was originally `minmax(0,1fr) 452px`
+ * (departures fills remaining width, weather is a FIXED 452px column) —
+ * per explicit follow-up feedback ("increase the overall size of the
+ * weather widget... 1/3 of the horizontal space and the departures widget
+ * 2/3"), replaced with a genuinely proportional `2fr 1fr`: departures
+ * (first column, per the handoff's "Departures widget (left)... Weather
+ * widget (right)" — confirmed still true in transit-weather-page.html,
+ * `.transit-weather-page__slot--departures` first, `<app-weather-panel/>`
+ * second) gets 2 parts of the row's width, weather gets 1 part — exactly a
+ * 2:1 ratio, i.e. weather is exactly 1/3 of the row, departures exactly
+ * 2/3, at any viewport width. This also fits this project's adaptive
+ * philosophy better than a fixed-452px column did: both sides now scale
+ * together proportionally instead of weather staying a fixed size while
+ * departures alone absorbs all the slack. `minmax(0, …fr)` for both
+ * columns, not bare `2fr 1fr`: a lone `<flex>` track has an implied
+ * `auto` (min-content) floor, the same "won't shrink below its content's
+ * intrinsic size" footgun already documented (and fixed the same way) for
+ * `grid-template-rows` above and for `.weather-panel__hourly-grid`'s own
+ * `repeat(6, minmax(0, 1fr))` — an explicit `0` minimum keeps both columns
+ * free to actually shrink to their 2:1 share instead of being floored by
+ * whichever slot's content wants to be widest.
+ *
+ * Kept above the responsive breakpoint below since it's still a landscape,
+ * tablet-and-up kiosk display, per the redesign plan's "adaptive, not
+ * phone-width responsive" decision. Below that width the two slots stack
+ * instead of clipping/overflowing.
+ *
+ * Narrow-end check (re-derived with real arithmetic, not assumed): just
+ * above this breakpoint's own 900px threshold (viewport ~901px, the
+ * narrowest width where the two columns still sit side by side rather than
+ * stacking), the two 36px page paddings and the 20px column gap leave
+ * ~808px for the row, of which weather's 1-part-of-3 share is ~270px —
+ * narrower than the old fixed 452px ever was in this two-column range
+ * (that width used to be reached only by STACKING to 100%, never as a
+ * two-column share). After `.weather-panel`'s own 26px+26px padding, that
+ * leaves ~218px for `.weather-panel__hourly-grid`'s content. At 6 columns
+ * (5x 8px gaps), each column is ~30px — using ~0.6em/character as a rough
+ * monospace-width estimate (IBM Plex Mono, no real rendering available to
+ * measure exactly), `.weather-panel__hour-temp` (e.g. "21°", 21px font)
+ * needs ~38px and `.weather-panel__rain-amount` (e.g. "0,4 l/m²", 11px
+ * font, the newest addition) needs ~53px — both wider than a ~30px column,
+ * a real cramping/wrapping risk this ratio change reopens. Fixed in
+ * weather-panel.css: below 1200px viewport width (chosen so the 6->4
+ * column switch itself lands with comfortable room — at exactly 1200px,
+ * weather's share is ~369px, giving ~73px per column after switching to 4
+ * — and the tightest surviving two-column width, ~901px, still improves to
+ * ~48px per column at 4 columns, close to fitting the ~53px rain-amount
+ * estimate; see weather-panel.css's own comment for the honest "this is
+ * close to the estimate's margin of error, not a comfortable one" caveat
+ * and the full-stack-to-100%-width fallback right below 900px), the
+ * hourly strip shows only its first 4 hours instead of 6, each getting
+ * meaningfully more room. The 2-line outlook rows needed no equivalent fix:
+ * they're full-width text inside the card's own padding, not a fixed-
+ * column grid, and `.weather-panel__outlook-condition`'s existing
+ * `overflow:hidden;text-overflow:ellipsis;white-space:nowrap` already
+ * handles a long German condition string not fitting at any width, not
+ * just this new narrower one — checked the rain-risk/rain-amount line's
+ * own width too (~132px of text at the narrowest ~270px share, comfortably
+ * under the ~182px available after the row's own indent) and found no
+ * equivalent gap there.
  */
 .transit-weather-page {
   display: grid;
   flex: 1 1 auto;
   min-height: 0;
-  grid-template-columns: minmax(0, 1fr) 452px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   /*
    * Explicit `minmax(0, 1fr)` row, not the implicit `auto` this used to
    * fall back to: an `auto`-sized grid row grows to fit its tallest item's
