@@ -135,30 +135,50 @@ class TriasDepartureProvider implements DepartureProvider {
      * TransitProperties} values, with no network call and no real
      * credentials needed.
      *
-     * <p>{@link TransitProperties#requestorRef()} is only included when
-     * non-blank: TRIAS auth is typically a RequestorRef identifier issued
-     * alongside the endpoint (see {@link TransitProperties}'s javadoc), and
-     * sending an empty {@code <RequestorRef></RequestorRef>} element once a
-     * real endpoint exists could plausibly be rejected outright rather than
-     * just ignored, so omitting it entirely when unset is the safer
-     * placeholder-friendly default.
+     * <p><b>{@code <RequestorRef>} is always emitted, even with empty
+     * content.</b> An earlier version of this method omitted the element
+     * entirely when {@link TransitProperties#requestorRef()} was blank,
+     * reasoning that an empty element might be rejected outright by a real
+     * endpoint. That reasoning was wrong: tracing the actual type graph
+     * (fetched live from {@code github.com/VDVde/TRIAS/siri-1.4/siri/}) shows
+     * every TRIAS {@code ServiceRequest} extends {@code
+     * AbstractTriasServiceRequestStructure} → {@code
+     * siri:ContextualisedRequestStructure}, whose {@code
+     * RequestorEndpointGroup} declares {@code <xsd:element ref="RequestorRef"
+     * />} with no {@code minOccurs} — i.e. {@code RequestorRef} is a
+     * <em>required</em> element in every conformant TRIAS request. Omitting
+     * it outright fails schema validation unconditionally, which is strictly
+     * worse than sending it with empty content (which at least round-trips
+     * as a structurally valid, if unauthenticated, request against a real
+     * endpoint).
+     *
+     * <p><b>{@code <LocationName>} is likewise always emitted (with empty
+     * content) inside {@code <LocationRef>}.</b> {@code
+     * Trias_LocationSupport.xsd}'s {@code LocationRefStructure} requires a
+     * {@code LocationName} element (no {@code minOccurs="0"}) alongside the
+     * {@code StopPointRef} choice — structurally required even though this
+     * dashboard only tracks a stop ref, not a human-readable stop name, in
+     * {@link TransitProperties}. Real TRIAS servers resolve the location via
+     * {@code StopPointRef} regardless of this element's content, so an empty
+     * {@code <Text>} is used rather than fabricating a fake name.
      */
     String buildStopEventRequest() {
         String timestamp = OffsetDateTime.now(ZONE).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        String requestorRefElement = isBlank(transitProperties.requestorRef())
-                ? ""
-                : "<RequestorRef>%s</RequestorRef>\n            ".formatted(escapeXml(transitProperties.requestorRef()));
 
         return """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <Trias version="%s" xmlns="%s" xmlns:siri="%s">
                     <ServiceRequest>
                         <siri:RequestTimestamp>%s</siri:RequestTimestamp>
-                        %s<RequestPayload>
+                        <RequestorRef>%s</RequestorRef>
+                        <RequestPayload>
                             <StopEventRequest>
                                 <Location>
                                     <LocationRef>
                                         <StopPointRef>%s</StopPointRef>
+                                        <LocationName>
+                                            <Text></Text>
+                                        </LocationName>
                                     </LocationRef>
                                     <DepArrTime>%s</DepArrTime>
                                 </Location>
@@ -174,7 +194,7 @@ class TriasDepartureProvider implements DepartureProvider {
                 """.formatted(
                 TRIAS_VERSION, TRIAS_NS, SIRI_NS,
                 timestamp,
-                requestorRefElement,
+                escapeXml(transitProperties.requestorRef()),
                 escapeXml(transitProperties.stopPointRef()),
                 timestamp,
                 NUMBER_OF_RESULTS);

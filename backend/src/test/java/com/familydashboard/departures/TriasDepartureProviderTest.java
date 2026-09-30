@@ -152,8 +152,12 @@ class TriasDepartureProviderTest {
      * (see {@link TransitProperties}). No WireMock server, no network call:
      * this calls {@link TriasDepartureProvider#buildStopEventRequest()}
      * directly and only asserts the result is well-formed XML that still
-     * contains a (here, empty) {@code <StopPointRef>} element and omits
-     * {@code <RequestorRef>} entirely.
+     * contains a (here, empty) {@code <StopPointRef>} element, and — per a
+     * reviewer-caught schema-conformance fix, see {@code
+     * buildStopEventRequest()}'s own javadoc — a {@code <RequestorRef>}
+     * element that is present with empty content rather than omitted, since
+     * {@code RequestorRef} is a required element in every conformant TRIAS
+     * request.
      */
     @Test
     void buildStopEventRequestProducesWellFormedXmlFromBlankPlaceholderConfig() {
@@ -165,7 +169,8 @@ class TriasDepartureProviderTest {
         assertThatCode(() -> parseXml(requestXml)).doesNotThrowAnyException();
         assertThat(requestXml).contains("<StopPointRef></StopPointRef>");
         assertThat(requestXml).contains("<StopEventRequest>");
-        assertThat(requestXml).doesNotContain("<RequestorRef>");
+        assertThat(requestXml).contains("<RequestorRef></RequestorRef>");
+        assertThat(requestXml).contains("<LocationName>");
     }
 
     @Test

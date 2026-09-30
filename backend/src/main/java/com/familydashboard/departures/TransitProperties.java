@@ -30,9 +30,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *                      issued alongside the endpoint, not a bearer token —
  *                      confirm the exact mechanism once MobiData BW responds,
  *                      and adjust this property's name/shape then if needed.
- *                      May be blank; {@link TriasDepartureProvider} omits the
- *                      {@code <RequestorRef>} element entirely rather than
- *                      sending an empty one when this is blank.
+ *                      May be blank; {@code RequestorRef} is a
+ *                      <em>required</em> element in every conformant TRIAS
+ *                      request (confirmed by tracing {@code
+ *                      siri:ContextualisedRequestStructure}'s {@code
+ *                      RequestorEndpointGroup} in {@code
+ *                      github.com/VDVde/TRIAS/siri-1.4/siri/}), so {@link
+ *                      TriasDepartureProvider} always emits the {@code
+ *                      <RequestorRef>} element — with empty content when this
+ *                      is blank — rather than omitting it, which would fail
+ *                      schema validation outright.
  * @param stopPointRef  KVV's internal stop ID for the one stop this
  *                      dashboard cares about.
  */
