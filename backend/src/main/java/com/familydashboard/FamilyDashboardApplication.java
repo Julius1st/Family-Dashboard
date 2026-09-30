@@ -5,11 +5,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import com.familydashboard.departures.TransitProperties;
 import com.familydashboard.todo.HouseholdProperties;
 import com.familydashboard.weather.WeatherProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({HouseholdProperties.class, WeatherProperties.class})
+@EnableConfigurationProperties({HouseholdProperties.class, WeatherProperties.class, TransitProperties.class})
 @EnableScheduling
 public class FamilyDashboardApplication {
 

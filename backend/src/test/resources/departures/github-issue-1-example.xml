@@ -1,0 +1,42 @@
+<!--
+  Reference-only. Fetched live from GitHub (the GitHub API is reachable from
+  this environment) while implementing TriasDepartureProviderTest, from
+  https://github.com/VDVde/TRIAS/issues/1 - the plan doc
+  (docs/departures-widget-plan.md, "Data source: TRIAS API via MobiData BW")
+  describes this issue as containing "a real example StopEventRequest/
+  response". That description does not hold up: the issue is titled
+  "Example request to trias service" and its body/comments only demonstrate
+  a LocationInformationRequest (looking up a stop by name, "Düsseldorf"),
+  never a StopEventRequest or StopEventResponse. No StopEventRequest/
+  StopEventResponse example exists in that issue to fetch.
+
+  Kept here, unused by any test, purely as provenance for that finding (and
+  because it's still a genuine, real, confirmed-working example TRIAS
+  envelope, useful as a reference for the outer Trias/ServiceRequest/
+  siri:RequestTimestamp shape used by TriasDepartureProvider.
+  buildStopEventRequest()). TriasDepartureProviderTest's actual
+  StopEventResponse fixture (trias-stop-event-response.xml, in this same
+  directory) is instead hand-built from the official Trias_StopEvents.xsd
+  schema, also fetched live from github.com/VDVde/TRIAS - see that fixture's
+  own header comment.
+
+  The body below is the working example posted by GitHub user "forgemo" in
+  a comment on that issue (quoted verbatim, reformatted only for indentation
+  consistency with this file's own style):
+
+  URL: the endpoint you have access to
+  METHOD: POST
+  HEADERS: Content-Type: text/xml
+-->
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+    <ServiceRequest>
+        <siri:RequestTimestamp>2019-02-17T12:14:01.139+01:00</siri:RequestTimestamp>
+        <RequestPayload>
+            <LocationInformationRequest>
+                <InitialInput>
+                    <LocationName>Düsseldorf</LocationName>
+                </InitialInput>
+            </LocationInformationRequest>
+        </RequestPayload>
+    </ServiceRequest>
+</Trias>

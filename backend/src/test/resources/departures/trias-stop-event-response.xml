@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-constructed, synthetic TRIAS StopEventResponse fixture - not a
+  captured real response. See TriasDepartureProviderTest's class javadoc for
+  the full provenance note: the publicly documented example request/response
+  in https://github.com/VDVde/TRIAS/issues/1 (fetched live from GitHub while
+  implementing this ticket) turned out to demonstrate a LocationInformation-
+  Request/Response, not a StopEventRequest/Response as
+  docs/departures-widget-plan.md's Ticket 1 section assumed - so this fixture
+  is instead built by hand from the official Trias_StopEvents.xsd /
+  Trias_JourneySupport.xsd / Trias_LocationSupport.xsd / Trias_Common.xsd /
+  Trias_ModesSupport.xsd schema files (also fetched live from
+  github.com/VDVde/TRIAS), which fully and unambiguously specify this
+  element structure.
+
+  Four StopEventResult entries, covering every case TriasDepartureProvider's
+  status-derivation logic branches on:
+    1. on-time, WITH real-time confirmation (EstimatedTime == TimetabledTime)
+    2. on-time, WITH NO real-time data at all (no EstimatedTime element)
+    3. delayed by 3 minutes (EstimatedTime 3 minutes after TimetabledTime) -
+       matches the design handoff's own "+3 Min" example.
+    4. cancelled (Service/Cancelled = true)
+-->
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+    <ServiceDelivery>
+        <siri:ResponseTimestamp>2026-10-01T08:00:00+02:00</siri:ResponseTimestamp>
+        <siri:ProducerRef>MobiData-BW</siri:ProducerRef>
+        <siri:Status>true</siri:Status>
+        <DeliveryPayload>
+            <StopEventResponse>
+                <StopEventResult>
+                    <ResultId>1</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>3</Text>
+                                </PlannedBay>
+                                <EstimatedBay>
+                                    <Text>3</Text>
+                                </EstimatedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:15:00+02:00</TimetabledTime>
+                                    <EstimatedTime>2026-10-01T08:15:00+02:00</EstimatedTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10001</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>S2</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>S2</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Bad Herrenalb</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+                <StopEventResult>
+                    <ResultId>2</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>1</Text>
+                                </PlannedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:18:00+02:00</TimetabledTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10002</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>4</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>4</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Durlach Bahnhof</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+                <StopEventResult>
+                    <ResultId>3</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>2</Text>
+                                </PlannedBay>
+                                <EstimatedBay>
+                                    <Text>2</Text>
+                                </EstimatedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:20:00+02:00</TimetabledTime>
+                                    <EstimatedTime>2026-10-01T08:23:00+02:00</EstimatedTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10003</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>5</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>5</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Rheinstetten Rathaus</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+                <StopEventResult>
+                    <ResultId>4</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>4</Text>
+                                </PlannedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:25:00+02:00</TimetabledTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10004</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>2</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>bus</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>2</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Knielingen</Text>
+                            </DestinationText>
+                            <Cancelled>true</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+            </StopEventResponse>
+        </DeliveryPayload>
+    </ServiceDelivery>
+</Trias>

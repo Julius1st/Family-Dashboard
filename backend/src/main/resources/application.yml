@@ -36,3 +36,26 @@ weather:
     # scheduling active) never trigger a live network call during a test
     # run.
     initial-delay-millis: 2000
+
+# TRIAS (VDV 431-2) real-time departures via MobiData BW - see
+# docs/departures-widget-plan.md's "Data source: TRIAS API via MobiData BW"
+# section. Access requested by email to mobidata-bw@nvbw.de; not yet granted
+# as of this ticket, so all three values below are empty placeholders. This
+# doesn't block TriasDepartureProvider's request-building/response-parsing
+# logic (see its own tests, which use WireMock and placeholder config), only
+# an actual live call.
+transit:
+  # The TRIAS StopEventRequest endpoint to POST to, once MobiData BW's
+  # response arrives.
+  endpoint-url: ""
+  # TRIAS auth is typically a "RequestorRef" identifier issued alongside the
+  # endpoint, not a bearer token - confirm the exact mechanism once MobiData
+  # BW responds, and adjust this property's name/shape then if needed. Left
+  # blank for now; TriasDepartureProvider omits the <RequestorRef> element
+  # entirely when this is blank rather than sending an empty one.
+  requestor-ref: ""
+  # KVV's internal stop ID for the one stop this dashboard cares about - not
+  # yet known. Fill in from either MobiData BW's response or KVV's own GTFS
+  # static feed (https://projekte.kvv-efa.de/GTFS/google_transit.zip) once
+  # available.
+  stop-point-ref: ""
