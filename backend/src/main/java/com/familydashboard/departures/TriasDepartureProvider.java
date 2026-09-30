@@ -148,9 +148,15 @@ class TriasDepartureProvider implements DepartureProvider {
      * />} with no {@code minOccurs} — i.e. {@code RequestorRef} is a
      * <em>required</em> element in every conformant TRIAS request. Omitting
      * it outright fails schema validation unconditionally, which is strictly
-     * worse than sending it with empty content (which at least round-trips
-     * as a structurally valid, if unauthenticated, request against a real
-     * endpoint).
+     * worse than sending it with empty content. Note this doesn't make an
+     * empty {@code <RequestorRef>} fully schema-valid either: {@code
+     * RequestorRef}'s type ({@code ParticipantRefStructure} → {@code
+     * ParticipantCodeType}, a restriction of {@code xsd:NMTOKEN} in {@code
+     * siri_participant-v1.1.xsd}) requires at least one NameChar, so an
+     * empty string is not a valid {@code NMTOKEN} value either. Sending it
+     * empty only satisfies the required-<em>element</em> cardinality; a
+     * genuinely valid, non-blank {@code NMTOKEN} value is still needed once
+     * real credentials arrive from MobiData BW.
      *
      * <p><b>{@code <LocationName>} is likewise always emitted (with empty
      * content) inside {@code <LocationRef>}.</b> {@code

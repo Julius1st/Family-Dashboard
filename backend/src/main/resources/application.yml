@@ -51,8 +51,12 @@ transit:
   # TRIAS auth is typically a "RequestorRef" identifier issued alongside the
   # endpoint, not a bearer token - confirm the exact mechanism once MobiData
   # BW responds, and adjust this property's name/shape then if needed. Left
-  # blank for now; TriasDepartureProvider omits the <RequestorRef> element
-  # entirely when this is blank rather than sending an empty one.
+  # blank for now; RequestorRef is a required element in every conformant
+  # TRIAS request (see TriasDepartureProvider.buildStopEventRequest()'s
+  # javadoc), so it's always sent, with empty content while this is blank -
+  # note that doesn't make it fully schema-valid either (RequestorRef's
+  # NMTOKEN-restricted type requires a non-empty value), so a genuinely
+  # valid value is still needed once MobiData BW responds.
   requestor-ref: ""
   # KVV's internal stop ID for the one stop this dashboard cares about - not
   # yet known. Fill in from either MobiData BW's response or KVV's own GTFS
