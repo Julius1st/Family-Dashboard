@@ -1,0 +1,38 @@
+<article class="departures-panel">
+  <header class="departures-panel__header">
+    <p class="departures-panel__eyebrow">ABFAHRTEN</p>
+    <h2 class="departures-panel__title">{{ stopLabel }}</h2>
+    <p class="departures-panel__freshness">{{ freshnessLabel() }}</p>
+  </header>
+
+  @if (departures(); as list) {
+    @if (list.length > 0) {
+      <div class="departures-panel__rows">
+        @for (row of rows(); track $index) {
+          <div class="departures-panel__row">
+            <div class="departures-panel__line">{{ row.line }}</div>
+            <p class="departures-panel__destination">{{ row.destination }}</p>
+            <p class="departures-panel__platform">{{ row.platform }}</p>
+            <p
+              class="departures-panel__status"
+              [class.departures-panel__status--late]="row.statusTone === 'late'"
+              [class.departures-panel__status--cancelled]="row.statusTone === 'cancelled'"
+            >{{ row.statusText }}</p>
+            <div class="departures-panel__time-block">
+              <p class="departures-panel__time" [class.departures-panel__time--cancelled]="row.cancelled">
+                {{ row.timeLabel }}
+              </p>
+              <p class="departures-panel__countdown" [class.departures-panel__countdown--cancelled]="row.cancelled">
+                {{ row.countdownLabel }}
+              </p>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="departures-panel__empty">Keine Abfahrten.</p>
+    }
+  } @else {
+    <p class="departures-panel__loading">Abfahrten werden geladen…</p>
+  }
+</article>

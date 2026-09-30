@@ -2,35 +2,40 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import { DeparturesService } from './departures.service';
 import { TransitWeatherPage } from './transit-weather-page';
 import { WeatherService } from './weather.service';
 
 /**
- * `WeatherPanel` (Ticket 4) now fills the weather slot, so this page's own
- * tests provide a fake `WeatherService` (same pattern `TasksPage.spec.ts`
- * uses for `TodoService`) rather than hitting real HTTP — `WeatherPanel`'s
- * own spec covers its rendering in depth; this file only checks the page
- * host still wires up both slots correctly.
+ * Both slots are now real, fully-wired components (`DeparturesPanel` and
+ * `WeatherPanel`, Ticket 4), so this page's own tests provide fake
+ * `DeparturesService`/`WeatherService` (same pattern `TasksPage.spec.ts`
+ * uses for `TodoService`) rather than hitting real HTTP — each panel's own
+ * spec covers its rendering in depth; this file only checks the page host
+ * still wires up both slots correctly.
  */
 describe('TransitWeatherPage', () => {
   function configureTestBed() {
     TestBed.configureTestingModule({
       imports: [TransitWeatherPage],
-      providers: [{ provide: WeatherService, useValue: { snapshot: signal(undefined) } }],
+      providers: [
+        { provide: DeparturesService, useValue: { departures: signal(undefined) } },
+        { provide: WeatherService, useValue: { snapshot: signal(undefined) } },
+      ],
     });
   }
 
-  it('renders a departures placeholder that clearly reads as not-yet-available', async () => {
+  it('renders the departures slot as the real DeparturesPanel component', async () => {
     configureTestBed();
     const fixture = TestBed.createComponent(TransitWeatherPage);
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-departures-panel')).not.toBeNull();
     expect(compiled.textContent).toContain('ABFAHRTEN');
-    expect(compiled.textContent).toContain('Abfahrten – noch nicht verfügbar');
   });
 
-  it('renders the weather slot as the real WeatherPanel component, not the old placeholder', async () => {
+  it('renders the weather slot as the real WeatherPanel component', async () => {
     configureTestBed();
     const fixture = TestBed.createComponent(TransitWeatherPage);
     await fixture.whenStable();
@@ -38,7 +43,6 @@ describe('TransitWeatherPage', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('app-weather-panel')).not.toBeNull();
     expect(compiled.textContent).toContain('WETTER');
-    expect(compiled.textContent).not.toContain('Wetter – noch nicht verfügbar');
   });
 
   it('renders both slots without errors and with non-blank content', async () => {
@@ -47,9 +51,9 @@ describe('TransitWeatherPage', () => {
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const departuresSlot = compiled.querySelector('.transit-weather-page__slot--departures');
+    const departuresPanel = compiled.querySelector('app-departures-panel');
     const weatherPanel = compiled.querySelector('app-weather-panel');
-    expect(departuresSlot?.textContent?.trim()).not.toBe('');
+    expect(departuresPanel?.textContent?.trim()).not.toBe('');
     expect(weatherPanel?.textContent?.trim()).not.toBe('');
   });
 
@@ -77,9 +81,9 @@ describe('TransitWeatherPage', () => {
 
     // Column order still matches the design handoff's "Departures widget
     // (left)... Weather widget (right)": the first (2fr, larger) column is
-    // the departures slot, the second (1fr, smaller) is the weather panel.
+    // the departures panel, the second (1fr, smaller) is the weather panel.
     const children = Array.from(grid.children);
-    expect(children[0].classList).toContain('transit-weather-page__slot--departures');
+    expect(children[0].tagName.toLowerCase()).toBe('app-departures-panel');
     expect(children[1].tagName.toLowerCase()).toBe('app-weather-panel');
   });
 });

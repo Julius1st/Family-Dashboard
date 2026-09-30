@@ -12,8 +12,8 @@
  * 2/3"), replaced with a genuinely proportional `2fr 1fr`: departures
  * (first column, per the handoff's "Departures widget (left)... Weather
  * widget (right)" — confirmed still true in transit-weather-page.html,
- * `.transit-weather-page__slot--departures` first, `<app-weather-panel/>`
- * second) gets 2 parts of the row's width, weather gets 1 part — exactly a
+ * `<app-departures-panel/>` first, `<app-weather-panel/>` second) gets 2
+ * parts of the row's width, weather gets 1 part — exactly a
  * 2:1 ratio, i.e. weather is exactly 1/3 of the row, departures exactly
  * 2/3, at any viewport width. This also fits this project's adaptive
  * philosophy better than a fixed-452px column did: both sides now scale
@@ -97,50 +97,4 @@
   .transit-weather-page {
     grid-template-columns: 1fr;
   }
-}
-
-/* Widget-card visual language shared with the Screen 1 tasks widget:
-   bg/surface, border/widget, radius/widget. */
-.transit-weather-page__slot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-width: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-widget);
-  border-radius: var(--radius-widget);
-  padding: 24px 26px 22px;
-  box-sizing: border-box;
-  text-align: center;
-}
-
-.transit-weather-page__eyebrow {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-.transit-weather-page__title {
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--ink-primary);
-}
-
-.transit-weather-page__note {
-  margin: 0;
-  max-width: 40ch;
-  font-family: var(--font-sans);
-  font-size: 17px;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--ink-secondary);
 }
