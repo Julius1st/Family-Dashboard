@@ -103,6 +103,37 @@ describe('DeparturesPanel', () => {
     expect(compiled.querySelector('.departures-panel__freshness')?.textContent?.trim()).toBe('Stand 08:12');
   });
 
+  it(
+    'updates the freshness marker on a subsequent refresh even when the new data is value-identical to the old ' +
+      '(a new array reference alone must be enough — DeparturesService never reuses a prior response\'s object ' +
+      'identity, since every poll is a fresh JSON deserialization), proving this is genuinely driven by ' +
+      'DeparturesService#departures changing on every poll, not just once',
+    async () => {
+      const state = configureWith({ departures: threeDepartures(), stopName: 'Wolfartsweierer Straße' });
+      const fixture = await createFixture();
+      const compiled = fixture.nativeElement as HTMLElement;
+
+      expect(compiled.querySelector('.departures-panel__freshness')?.textContent?.trim()).toBe('Stand 08:12');
+
+      // Simulate the next 60s poll resolving with byte-for-byte identical
+      // departure data — a new array (and new element objects within it),
+      // as every real `HttpClient` JSON response produces, but `toEqual`
+      // to the previous one. Nothing here changes `rows()`'s rendered
+      // content; the only thing that should move is the freshness marker.
+      vi.setSystemTime(new Date('2026-09-30T08:13:45'));
+      const identicalContentNewReference = threeDepartures();
+      expect(identicalContentNewReference).not.toBe(state.departures());
+      expect(identicalContentNewReference).toEqual(state.departures());
+      state.departures.set(identicalContentNewReference);
+      await fixture.whenStable();
+
+      expect(compiled.querySelector('.departures-panel__freshness')?.textContent?.trim()).toBe('Stand 08:13');
+      // The rows themselves are unaffected — only the clock, confirming
+      // this isn't accidentally the row content changing too.
+      expect(compiled.querySelectorAll('.departures-panel__row').length).toBe(3);
+    },
+  );
+
   it('renders the title row and one row per departure, covering on-time/delayed/cancelled', async () => {
     configureWith({ departures: threeDepartures(), stopName: 'Wolfartsweierer Straße' });
 
@@ -157,4 +188,60 @@ describe('DeparturesPanel', () => {
     expect(cancelledCountdown?.textContent?.trim()).toBe('—');
     expect(cancelledCountdown?.classList).toContain('departures-panel__countdown--cancelled');
   });
+
+  it(
+    'colors a recognized line badge with its official KVV color, and leaves an unrecognized/bus line on the ' +
+      'default neutral badge styling (no inline background/color at all) — see kvv-line-colors.spec.ts for full ' +
+      'coverage of the color table itself',
+    async () => {
+      const departures: Departure[] = [
+        {
+          line: '4', // tram line 4: verkehrsgelb #f1c21f, dark text
+          destination: 'Durlach Turmberg',
+          platform: 'Gl. 1',
+          statusText: 'pünktlich',
+          statusTone: 'ok',
+          time: '2026-09-30T08:15:00',
+          countdownMinutes: 3,
+        },
+        {
+          line: 'S2', // Stadtbahn S2: signalviolett #804387, light text
+          destination: 'Bad Herrenalb',
+          platform: 'Gl. 3',
+          statusText: 'pünktlich',
+          statusTone: 'ok',
+          time: '2026-09-30T08:16:00',
+          countdownMinutes: 4,
+        },
+        {
+          line: '42', // bus line — not covered by the KVV wiki source at all
+          destination: 'Rintheim',
+          platform: 'Bstg. 2',
+          statusText: 'pünktlich',
+          statusTone: 'ok',
+          time: '2026-09-30T08:17:00',
+          countdownMinutes: 5,
+        },
+      ];
+      configureWith({ departures, stopName: 'Marktplatz' });
+
+      const fixture = await createFixture();
+      const compiled = fixture.nativeElement as HTMLElement;
+      const rows = Array.from(compiled.querySelectorAll<HTMLElement>('.departures-panel__row'));
+
+      const tramLine = rows[0].querySelector<HTMLElement>('.departures-panel__line');
+      expect(tramLine?.style.background).toBe('rgb(241, 194, 31)'); // #f1c21f
+      expect(tramLine?.style.color).toBe('rgb(0, 0, 0)'); // #000000
+
+      const stadtbahnLine = rows[1].querySelector<HTMLElement>('.departures-panel__line');
+      expect(stadtbahnLine?.style.background).toBe('rgb(128, 67, 135)'); // #804387
+      expect(stadtbahnLine?.style.color).toBe('rgb(255, 255, 255)'); // #ffffff
+
+      // Bus line: no inline background/color set at all, so the element
+      // falls through to the stylesheet's default bg/inset-hi badge.
+      const busLine = rows[2].querySelector<HTMLElement>('.departures-panel__line');
+      expect(busLine?.style.background).toBe('');
+      expect(busLine?.style.color).toBe('');
+    },
+  );
 });

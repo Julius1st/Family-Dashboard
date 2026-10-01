@@ -95,7 +95,14 @@
 }
 
 /* Line badge: min-width 64, 7/10 padding, radius 8, bg/inset-hi, mono 19/600
-   (handoff, Screen 2 "Departures widget", column 1). */
+   (handoff, Screen 2 "Departures widget", column 1). This is the DEFAULT
+   look, for a line `kvv-line-colors.ts` doesn't recognize (every bus line,
+   per that file's doc comment). A recognized Stadtbahn/tram line instead
+   gets its official KVV color via the template's `[style.background]` /
+   `[style.color]` bindings on this element (see `DepartureRow.lineColor` in
+   departures-panel.ts) - those inline styles simply aren't set when
+   `lineColor` is `undefined`, so the background/color declared here apply
+   unchanged for bus rows. */
 .departures-panel__line {
   flex: none;
   min-width: 64px;

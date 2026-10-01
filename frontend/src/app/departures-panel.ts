@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 
 import { Departure, DepartureStatusTone } from './departure';
 import { DeparturesService } from './departures.service';
+import { kvvLineColor, LineColor } from './kvv-line-colors';
 
 /**
  * Fallback title shown once a fetch has resolved but the backend still
@@ -52,6 +53,15 @@ interface DepartureRow {
   readonly countdownLabel: string;
   /** Drives the struck-through/dimmed time treatment the design specifies for a cancelled departure. */
   readonly cancelled: boolean;
+  /**
+   * The line badge's resolved KVV color (see `kvv-line-colors.ts` for the
+   * source, caveats, and the S41-conflict resolution), or `undefined` for a
+   * line `kvvLineColor()` doesn't recognize — every bus line, plus any
+   * Stadtbahn/tram line not covered by that file's source data — in which
+   * case the template falls back to the existing neutral `bg/inset-hi`
+   * badge, unchanged from before this feature.
+   */
+  readonly lineColor: LineColor | undefined;
 }
 
 /**
@@ -83,10 +93,23 @@ interface DepartureRow {
  * `freshnessLabel` is a `computed()` that reads `new Date()` — same
  * "impure read inside `computed()`" pattern `WeatherPanel.hourly` already
  * uses for `new Date().getHours()` — which only re-evaluates when {@link
- * DeparturesService#departures} itself changes (i.e. once, when
- * `DeparturesService`'s one-shot constructor-time fetch resolves — see its
- * own doc comment), so the timestamp shown is genuinely "when this
- * component last received data," not a continuously-ticking clock.
+ * DeparturesService#departures} itself changes, so the timestamp shown is
+ * genuinely "when this component last received data," not a
+ * continuously-ticking clock. `DeparturesService` now polls `GET
+ * /api/departures` every 60s (see its own doc comment), and each successful
+ * poll sets a freshly-deserialized response object — a new array reference
+ * every time, even when the departure data is byte-for-byte identical to
+ * the previous poll — so `departures()`'s `Object.is`-based change
+ * detection fires on every successful refresh, not just the first. That
+ * makes this marker update roughly once a minute on its own, with no
+ * changes needed here: it was already "re-evaluate whenever `departures()`
+ * changes," and `departures()` now changes periodically instead of once. A
+ * *failed* poll is the one case that doesn't move this marker — `
+ * DeparturesService` deliberately keeps the prior response (and therefore
+ * the prior `departures()` reference) on a failed refresh rather than
+ * clearing it, so "Stand hh:mm" correctly keeps showing the last time data
+ * was actually, successfully received, not the last time a refresh was merely
+ * attempted.
  *
  * **Loading vs. empty vs. "not configured/unreachable"**: `departures()`
  * `undefined` renders a loading placeholder. Once resolved, a genuinely
@@ -119,6 +142,14 @@ interface DepartureRow {
  * state below), the real name once resolved, or {@link
  * UNKNOWN_STOP_LABEL}'s fallback if resolved but `null` (see that constant's
  * own doc comment for the reasoning).
+ *
+ * **Line badge color**: `.departures-panel__line` is colored per-line to
+ * match KVV's own official Stadtbahn/tram colors where `kvv-line-colors.ts`
+ * recognizes the line (see that file's doc comment for the data source —
+ * notably a secondary wiki source, not KVV's own GTFS feed — and how the
+ * S41 source conflict was resolved); bus lines and any other unrecognized
+ * line keep the original neutral `bg/inset-hi` badge the design handoff
+ * specifies, via `DepartureRow.lineColor` being `undefined` for them.
  */
 @Component({
   selector: 'app-departures-panel',
@@ -159,5 +190,6 @@ function toRow(departure: Departure): DepartureRow {
     timeLabel: TIME_FORMATTER.format(new Date(departure.time)),
     countdownLabel: formatCountdown(departure.countdownMinutes),
     cancelled: departure.statusTone === 'cancelled',
+    lineColor: kvvLineColor(departure.line),
   };
 }

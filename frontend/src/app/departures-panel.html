@@ -10,7 +10,11 @@
       <div class="departures-panel__rows">
         @for (row of rows(); track $index) {
           <div class="departures-panel__row">
-            <div class="departures-panel__line">{{ row.line }}</div>
+            <div
+              class="departures-panel__line"
+              [style.background]="row.lineColor?.background"
+              [style.color]="row.lineColor?.text"
+            >{{ row.line }}</div>
             <p class="departures-panel__destination">{{ row.destination }}</p>
             <p class="departures-panel__platform">{{ row.platform }}</p>
             <p
