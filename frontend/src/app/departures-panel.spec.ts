@@ -24,9 +24,13 @@ describe('DeparturesPanel', () => {
     vi.useRealTimers();
   });
 
-  function configureWith(departures: readonly Departure[] | undefined) {
-    const departuresSignal = signal(departures);
-    const fake = { departures: departuresSignal };
+  function configureWith(state: {
+    departures: readonly Departure[] | undefined;
+    stopName: string | null | undefined;
+  }) {
+    const departuresSignal = signal(state.departures);
+    const stopNameSignal = signal(state.stopName);
+    const fake = { departures: departuresSignal, stopName: stopNameSignal };
     TestBed.configureTestingModule({
       imports: [DeparturesPanel],
       providers: [{ provide: DeparturesService, useValue: fake }],
@@ -72,24 +76,26 @@ describe('DeparturesPanel', () => {
     ];
   }
 
-  it('renders a loading placeholder while departures have not resolved yet, with no rows and no freshness marker', async () => {
-    configureWith(undefined);
+  it('renders a loading placeholder while departures have not resolved yet, with a blank title, no rows and no freshness marker', async () => {
+    configureWith({ departures: undefined, stopName: undefined });
 
     const fixture = await createFixture();
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.departures-panel__eyebrow')?.textContent?.trim()).toBe('ABFAHRTEN');
+    expect(compiled.querySelector('.departures-panel__title')?.textContent?.trim()).toBe('');
     expect(compiled.textContent).toContain('Abfahrten werden geladen');
     expect(compiled.querySelectorAll('.departures-panel__row').length).toBe(0);
     expect(compiled.querySelector('.departures-panel__freshness')?.textContent?.trim()).toBe('');
   });
 
-  it('renders a non-blank empty state when the resolved list is genuinely empty, distinct from loading', async () => {
-    configureWith([]);
+  it('renders a non-blank empty state when the resolved list is genuinely empty, distinct from loading, with the generic fallback title when the stop name is unknown', async () => {
+    configureWith({ departures: [], stopName: null });
 
     const fixture = await createFixture();
     const compiled = fixture.nativeElement as HTMLElement;
 
+    expect(compiled.querySelector('.departures-panel__title')?.textContent?.trim()).toBe('Haltestelle');
     expect(compiled.textContent).toContain('Keine Abfahrten.');
     expect(compiled.textContent).not.toContain('Abfahrten werden geladen');
     expect(compiled.querySelectorAll('.departures-panel__row').length).toBe(0);
@@ -98,13 +104,13 @@ describe('DeparturesPanel', () => {
   });
 
   it('renders the title row and one row per departure, covering on-time/delayed/cancelled', async () => {
-    configureWith(threeDepartures());
+    configureWith({ departures: threeDepartures(), stopName: 'Wolfartsweierer Straße' });
 
     const fixture = await createFixture();
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.departures-panel__eyebrow')?.textContent?.trim()).toBe('ABFAHRTEN');
-    expect(compiled.querySelector('.departures-panel__title')?.textContent?.trim()).toBe('Ostbahnhof');
+    expect(compiled.querySelector('.departures-panel__title')?.textContent?.trim()).toBe('Wolfartsweierer Straße');
     expect(compiled.querySelector('.departures-panel__freshness')?.textContent?.trim()).toBe('Stand 08:12');
 
     const rows = Array.from(compiled.querySelectorAll<HTMLElement>('.departures-panel__row'));

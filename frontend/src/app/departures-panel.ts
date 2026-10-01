@@ -4,18 +4,28 @@ import { Departure, DepartureStatusTone } from './departure';
 import { DeparturesService } from './departures.service';
 
 /**
- * This dashboard's real target stop is not yet known — `TransitProperties.
- * stopPointRef` (backend) is still an empty placeholder until MobiData BW
- * grants TRIAS access (see `docs/departures-widget-plan.md`'s "Working
- * without credentials yet" section) — unlike `WeatherPanel.LOCATION_LABEL`,
- * which could be confidently swapped from the design handoff's illustrative
- * "Frankfurt" to this project's actual real target city ("Karlsruhe",
- * confirmed elsewhere in the docs). There is no equivalent confirmed real
- * stop name to substitute here, so this keeps the handoff's own illustrative
- * sample stop name verbatim rather than inventing one. Update this once a
- * real stop is chosen/configured.
+ * Fallback title shown once a fetch has resolved but the backend still
+ * couldn't determine the stop's real name (`DeparturesService.stopName()`
+ * resolved to `null` — zero departures in the queried window, or the TRIAS
+ * provider call failing entirely; see `DeparturesResponse`'s own doc comment
+ * for why the backend passes that `null` through rather than substituting
+ * something itself).
+ *
+ * "Haltestelle" (German for "stop") is chosen over the two other options
+ * considered: the raw configured `stop-point-ref` value (e.g. {@code
+ * "de:08212:623"}) isn't exposed by the API at all today and is also not
+ * remotely passenger-facing text, so showing it would trade one piece of
+ * confusing placeholder copy for another, arguably worse one; and leaving
+ * the title blank reads as broken/unfinished next to the eyebrow and
+ * freshness marker either side of it in the same title row, whereas a
+ * generic-but-honest label doesn't claim to know something it doesn't. This
+ * is expected to be rare in practice — a real TRIAS response always carries
+ * `StopPointName` for every live departure it returns — so simplicity here
+ * wins over a more elaborate fallback scheme for a state that should barely
+ * ever be seen, same reasoning `DepartureDto`'s own `"Gl. –"` fallback gives
+ * for itself.
  */
-const STOP_LABEL = 'Ostbahnhof';
+const UNKNOWN_STOP_LABEL = 'Haltestelle';
 
 /**
  * `time` is an ISO-8601 local date-time string from the backend (see
@@ -92,13 +102,23 @@ interface DepartureRow {
  *
  * **Manual verification note**: this component cannot be smoke-tested
  * against real TRIAS data yet — MobiData BW has not granted access as of
- * this ticket (see {@link STOP_LABEL}'s own doc comment and
- * `docs/departures-widget-plan.md`'s "Working without credentials yet"
- * section), so `application.yml`'s `transit.*` placeholders are still
- * blank. Every render this component's own tests exercise uses a fake
- * `DeparturesService`, never a real backend response; there has been no
+ * this ticket (see `docs/departures-widget-plan.md`'s "Working without
+ * credentials yet" section), so `application.yml`'s `transit.*` placeholders
+ * are still blank. Every render this component's own tests exercise uses a
+ * fake `DeparturesService`, never a real backend response; there has been no
  * end-to-end check against live departure data, unlike the weather widget's
  * equivalent ticket, which could verify against the real Open-Meteo API.
+ *
+ * **Title, across loading / populated / name-unknown states**: `titleLabel`
+ * reads `DeparturesService.stopName()` and renders blank while it's
+ * `undefined` (the initial fetch hasn't resolved — the previous hardcoded
+ * sample stop name used to render unconditionally here even during loading,
+ * which this replaces: showing a specific-looking but not-yet-real name for
+ * up to one network round trip is more misleading than a brief blank title
+ * next to the "Abfahrten werden geladen…" message already covering that
+ * state below), the real name once resolved, or {@link
+ * UNKNOWN_STOP_LABEL}'s fallback if resolved but `null` (see that constant's
+ * own doc comment for the reasoning).
  */
 @Component({
   selector: 'app-departures-panel',
@@ -109,7 +129,15 @@ export class DeparturesPanel {
   private readonly departuresService = inject(DeparturesService);
 
   protected readonly departures = this.departuresService.departures;
-  protected readonly stopLabel = STOP_LABEL;
+
+  /** See this class's own doc comment ("Title, across loading / populated / name-unknown states") for what each state renders. */
+  protected readonly titleLabel = computed(() => {
+    const stopName = this.departuresService.stopName();
+    if (stopName === undefined) {
+      return '';
+    }
+    return stopName ?? UNKNOWN_STOP_LABEL;
+  });
 
   protected readonly freshnessLabel = computed(() => {
     return this.departures() !== undefined ? `Stand ${TIME_FORMATTER.format(new Date())}` : '';

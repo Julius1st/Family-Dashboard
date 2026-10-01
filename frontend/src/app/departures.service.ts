@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, Signal, inject, signal } from '@angular/core';
+import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { EMPTY, catchError } from 'rxjs';
 
-import { Departure } from './departure';
+import { Departure, DeparturesResponse } from './departure';
 
 /**
  * Fetches the next departures from `GET /api/departures` and exposes them as
@@ -33,20 +33,35 @@ import { Departure } from './departure';
  * weather, departures go stale within minutes, not hours) is a plausible
  * fast-follow but out of scope for `docs/departures-widget-plan.md`'s
  * Ticket 3.
+ *
+ * One internal signal holds the full `DeparturesResponse` (or `undefined`
+ * before the fetch resolves); `departures`/`stopName` are both derived
+ * `computed()`s off it rather than two independently-set signals, so a
+ * single `subscribe` callback can never leave them momentarily
+ * out of sync with each other.
  */
 @Injectable({ providedIn: 'root' })
 export class DeparturesService {
   private readonly http = inject(HttpClient);
 
-  private readonly departuresState = signal<readonly Departure[] | undefined>(undefined);
+  private readonly responseState = signal<DeparturesResponse | undefined>(undefined);
 
   /** The next departures at the configured stop. `undefined` until the initial fetch resolves. */
-  readonly departures: Signal<readonly Departure[] | undefined> = this.departuresState.asReadonly();
+  readonly departures: Signal<readonly Departure[] | undefined> = computed(() => this.responseState()?.departures);
+
+  /**
+   * The configured stop's human-readable name. `undefined` until the
+   * initial fetch resolves; `null` once resolved if the backend could not
+   * determine it (zero departures, or the TRIAS provider failing — see
+   * `DeparturesResponse`'s own doc comment for why the backend doesn't
+   * substitute a fallback itself).
+   */
+  readonly stopName: Signal<string | null | undefined> = computed(() => this.responseState()?.stopName);
 
   constructor() {
     this.http
-      .get<Departure[]>('/api/departures')
+      .get<DeparturesResponse>('/api/departures')
       .pipe(catchError(() => EMPTY))
-      .subscribe((departures) => this.departuresState.set(departures));
+      .subscribe((response) => this.responseState.set(response));
   }
 }

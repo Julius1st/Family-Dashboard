@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { Departure } from './departure';
+import { Departure, DeparturesResponse } from './departure';
 import { DeparturesService } from './departures.service';
 
 describe('DeparturesService', () => {
@@ -19,24 +19,26 @@ describe('DeparturesService', () => {
     httpMock.verify();
   });
 
-  it('starts undefined before the request resolves', () => {
+  it('starts undefined before the request resolves, for both departures and stopName', () => {
     const service = TestBed.inject(DeparturesService);
 
     expect(service.departures()).toBeUndefined();
+    expect(service.stopName()).toBeUndefined();
 
-    httpMock.expectOne('/api/departures').flush([]);
+    httpMock.expectOne('/api/departures').flush(emptyResponse());
   });
 
-  it('exposes a typed list of departures as a signal after a successful fetch, mapping every field, covering on-time/delayed/cancelled', () => {
+  it('exposes a typed list of departures and the stop name as signals after a successful fetch, mapping every field, covering on-time/delayed/cancelled', () => {
     const service = TestBed.inject(DeparturesService);
-    const response = threeDepartures();
+    const response = threeDeparturesResponse();
 
     const req = httpMock.expectOne('/api/departures');
     expect(req.request.method).toBe('GET');
     req.flush(response);
 
+    expect(service.stopName()).toBe('Wolfartsweierer Straße');
     const departures = service.departures();
-    expect(departures).toEqual(response);
+    expect(departures).toEqual(response.departures);
     expect(departures?.[0]).toEqual({
       line: 'S2',
       destination: 'Bad Herrenalb',
@@ -66,22 +68,32 @@ describe('DeparturesService', () => {
     });
   });
 
-  it('treats an empty array as a normal empty state, not an error — matching the backend\'s "no departures" and "provider not configured" cases alike', () => {
+  it('treats an empty departures array with a null stop name as a normal empty state, not an error — matching the backend\'s "no departures" and "provider not configured" cases alike', () => {
     const service = TestBed.inject(DeparturesService);
 
-    httpMock.expectOne('/api/departures').flush([]);
+    httpMock.expectOne('/api/departures').flush(emptyResponse());
 
     expect(service.departures()).toEqual([]);
+    expect(service.stopName()).toBeNull();
   });
 
-  it('stays undefined and does not throw an unhandled error on a request failure', () => {
+  it('stays undefined (both departures and stopName) and does not throw an unhandled error on a request failure', () => {
     const service = TestBed.inject(DeparturesService);
 
     const req = httpMock.expectOne('/api/departures');
     expect(() => req.flush('Unexpected error', { status: 500, statusText: 'Internal Server Error' })).not.toThrow();
 
     expect(service.departures()).toBeUndefined();
+    expect(service.stopName()).toBeUndefined();
   });
+
+  function emptyResponse(): DeparturesResponse {
+    return { stopName: null, departures: [] };
+  }
+
+  function threeDeparturesResponse(): DeparturesResponse {
+    return { stopName: 'Wolfartsweierer Straße', departures: threeDepartures() };
+  }
 
   function threeDepartures(): Departure[] {
     return [

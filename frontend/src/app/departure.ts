@@ -46,3 +46,25 @@ export interface Departure {
    */
   readonly countdownMinutes: number | null;
 }
+
+/**
+ * Full response shape of `GET /api/departures`, mirroring the backend's
+ * `com.familydashboard.departures.DeparturesDto` record exactly: `{
+ * stopName, departures }`.
+ *
+ * `stopName` is `null` whenever the backend couldn't determine it — either
+ * the resolved response genuinely had zero departures, or the TRIAS
+ * provider call failed entirely (`DeparturesController` collapses both into
+ * the same empty-board shape; see its own doc comment). The backend
+ * deliberately passes that `null` straight through rather than substituting
+ * placeholder text itself — see `DeparturesDto`'s doc comment for why: only
+ * this frontend additionally has a third state the backend doesn't ("the
+ * initial fetch hasn't resolved yet" — see `DeparturesService`), so only the
+ * frontend can tell that apart from "resolved, but genuinely no name," and
+ * is therefore the right place to decide what each state actually displays
+ * (see `DeparturesPanel.titleLabel`).
+ */
+export interface DeparturesResponse {
+  readonly stopName: string | null;
+  readonly departures: readonly Departure[];
+}

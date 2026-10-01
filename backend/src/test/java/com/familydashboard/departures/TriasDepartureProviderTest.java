@@ -84,7 +84,7 @@ class TriasDepartureProviderTest {
                         .withHeader("Content-Type", "text/xml")
                         .withBody(readFixture("trias-stop-event-response.xml"))));
 
-        provider.nextDepartures();
+        provider.nextDepartureBoard();
 
         wireMockServer.verify(postRequestedFor(urlPathEqualTo("/trias"))
                 .withHeader("Content-Type", equalTo("text/xml"))
@@ -103,9 +103,15 @@ class TriasDepartureProviderTest {
                         .withHeader("Content-Type", "text/xml")
                         .withBody(readFixture("trias-stop-event-response.xml"))));
 
-        var departures = provider.nextDepartures();
+        var board = provider.nextDepartureBoard();
+        var departures = board.departures();
 
         assertThat(departures).hasSize(4);
+
+        // Every CallAtStop in the fixture names the same stop ("Marktplatz")
+        // - see the stop-name-specific tests below for the "first non-blank
+        // wins" extraction logic itself.
+        assertThat(board.stopName()).isEqualTo("Marktplatz");
 
         // 1. On time, confirmed by real-time data (EstimatedTime == TimetabledTime).
         Departure onTimeConfirmed = departures.get(0);
@@ -177,7 +183,7 @@ class TriasDepartureProviderTest {
                         .withHeader("Content-Type", "text/xml")
                         .withBody(readFixture("trias-stop-event-response.xml"))));
 
-        var departures = provider.nextDepartures();
+        var departures = provider.nextDepartureBoard().departures();
 
         Departure onTimeConfirmed = departures.get(0);
         assertThat(onTimeConfirmed.platform()).isEqualTo("Gl. 3");
@@ -215,7 +221,7 @@ class TriasDepartureProviderTest {
                         .withHeader("Content-Type", "text/xml")
                         .withBody(readFixture("trias-stop-event-response-bus-platform.xml"))));
 
-        var departures = provider.nextDepartures();
+        var departures = provider.nextDepartureBoard().departures();
 
         assertThat(departures).hasSize(2);
 
@@ -236,7 +242,7 @@ class TriasDepartureProviderTest {
      * Regression test for a real bug seen against live KVV data: a
      * destination containing the German "ß" ("Wolfartsweierer Straße")
      * rendered as two garbled characters. Root cause (see {@link
-     * TriasDepartureProvider#nextDepartures()}'s own comment): the response
+     * TriasDepartureProvider#nextDepartureBoard()}'s own comment): the response
      * body was read into a {@code String} via {@code RestClient}'s default
      * message converter BEFORE being handed to the XML parser, and that
      * converter falls back to ISO-8859-1 whenever the HTTP response's
@@ -256,10 +262,61 @@ class TriasDepartureProviderTest {
                         .withHeader("Content-Type", "text/xml")
                         .withBody(readFixtureBytes("trias-stop-event-response-non-ascii.xml"))));
 
-        var departures = provider.nextDepartures();
+        var departures = provider.nextDepartureBoard().departures();
 
         assertThat(departures).hasSize(1);
         assertThat(departures.get(0).destination()).isEqualTo("Wolfartsweierer Straße");
+    }
+
+    /**
+     * Zero {@code StopEventResult} entries is a genuinely valid TRIAS
+     * response ("no departures in the queried window"), not an error - see
+     * {@code DeparturesController}'s own handling of this case. With no
+     * {@code CallAtStop} anywhere in the response to extract a {@code
+     * StopPointName/Text} from (see {@link DepartureBoard}'s javadoc on why
+     * the name lives per-departure, not independently), {@link
+     * DepartureBoard#stopName()} must be {@code null} rather than throwing
+     * or defaulting to some placeholder - that fallback decision belongs to
+     * {@code DeparturesController}/the frontend, not this parsing layer.
+     */
+    @Test
+    void nextDepartureBoardHasANullStopNameWhenTheResponseHasNoDepartures() {
+        wireMockServer.stubFor(post(urlPathEqualTo("/trias"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(readFixture("trias-stop-event-response-empty.xml"))));
+
+        var board = provider.nextDepartureBoard();
+
+        assertThat(board.departures()).isEmpty();
+        assertThat(board.stopName()).isNull();
+    }
+
+    /**
+     * {@code StopPointName/Text} is repeated once per {@code CallAtStop}
+     * (i.e. once per departure), never carried independently of the
+     * departures list - see {@link DepartureBoard}'s javadoc. This dashboard
+     * only ever queries one {@code StopPointRef} per request, so every entry
+     * in a real response is expected to name the same stop; {@link
+     * TriasDepartureProvider#parseStopEventResponse} takes the first
+     * non-blank one it finds and ignores the rest. This fixture's first
+     * entry deliberately carries a blank {@code <Text></Text>} and its
+     * second entry the real stop name, confirming the extraction loop skips
+     * past the blank candidate instead of settling for it (which would
+     * otherwise wrongly leave {@link DepartureBoard#stopName()} {@code
+     * null} despite a usable name being available one entry later).
+     */
+    @Test
+    void nextDepartureBoardTakesTheFirstNonBlankStopNameAcrossMultipleDepartures() {
+        wireMockServer.stubFor(post(urlPathEqualTo("/trias"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(readFixture("trias-stop-event-response-first-stopname-blank.xml"))));
+
+        var board = provider.nextDepartureBoard();
+
+        assertThat(board.departures()).hasSize(2);
+        assertThat(board.stopName()).isEqualTo("Wolfartsweierer Straße");
     }
 
     /**

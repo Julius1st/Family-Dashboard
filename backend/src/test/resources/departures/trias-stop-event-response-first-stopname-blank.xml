@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-constructed, synthetic TRIAS StopEventResponse fixture - not a
+  captured real response. Same provenance/construction approach as
+  trias-stop-event-response.xml (see TriasDepartureProviderTest's class
+  javadoc).
+
+  Regression/coverage fixture for TriasDepartureProvider.parseStopEventResponse's
+  "first non-blank wins" StopPointName/Text extraction: two StopEventResult
+  entries, both naming the same real-world stop ("Wolfartsweierer Straße" -
+  this dashboard's actual configured stop, per docs/departures-widget-plan.md),
+  but entry 1 deliberately carries an empty <StopPointName><Text></Text>
+  </StopPointName> (simulating a CallAtStop that, for whatever reason, omits
+  the name) while entry 2 carries the real value. Confirms the extraction
+  loop does not stop at - or return - the first (blank) candidate it finds,
+  skipping ahead to the next StopEventResult instead.
+-->
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+    <ServiceDelivery>
+        <siri:ResponseTimestamp>2026-10-01T08:00:00+02:00</siri:ResponseTimestamp>
+        <siri:ProducerRef>MobiData-BW</siri:ProducerRef>
+        <siri:Status>true</siri:Status>
+        <DeliveryPayload>
+            <StopEventResponse>
+                <StopEventResult>
+                    <ResultId>1</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:623</StopPointRef>
+                                <StopPointName>
+                                    <Text></Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>Gleis 1</Text>
+                                </PlannedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:15:00+02:00</TimetabledTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10001</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>5</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>5</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Rheinstetten Rathaus</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+                <StopEventResult>
+                    <ResultId>2</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:623</StopPointRef>
+                                <StopPointName>
+                                    <Text>Wolfartsweierer Straße</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>Gleis 1</Text>
+                                </PlannedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:22:00+02:00</TimetabledTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10002</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>5</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>5</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Rheinstetten Rathaus</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+            </StopEventResponse>
+        </DeliveryPayload>
+    </ServiceDelivery>
+</Trias>

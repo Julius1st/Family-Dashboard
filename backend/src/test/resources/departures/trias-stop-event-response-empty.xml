@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-constructed, synthetic TRIAS StopEventResponse fixture - not a
+  captured real response. Same provenance/construction approach as
+  trias-stop-event-response.xml (see TriasDepartureProviderTest's class
+  javadoc).
+
+  Zero StopEventResult entries: a genuinely valid TRIAS response for "no
+  departures in the queried window" - not an error, and not something that
+  should throw while parsing. Used to confirm DepartureBoard.stopName() is
+  null in this case: there is no CallAtStop anywhere in the response to
+  extract a StopPointName/Text from, since that element is only ever carried
+  per-departure (see DepartureBoard's own javadoc for why that's the reason
+  a wrapper type exists at all, rather than a stopName field on Departure
+  itself).
+-->
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+    <ServiceDelivery>
+        <siri:ResponseTimestamp>2026-10-01T08:00:00+02:00</siri:ResponseTimestamp>
+        <siri:ProducerRef>MobiData-BW</siri:ProducerRef>
+        <siri:Status>true</siri:Status>
+        <DeliveryPayload>
+            <StopEventResponse>
+            </StopEventResponse>
+        </DeliveryPayload>
+    </ServiceDelivery>
+</Trias>

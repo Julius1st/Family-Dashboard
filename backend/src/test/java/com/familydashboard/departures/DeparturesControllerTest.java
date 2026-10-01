@@ -54,62 +54,64 @@ class DeparturesControllerTest {
                 "5", "Rheinstetten Rathaus", "Gl. 2", now.plusMinutes(5), now.plusMinutes(8), DepartureStatus.DELAYED);
         Departure cancelled = new Departure(
                 "2", "Knielingen", null, now.plusMinutes(12), null, DepartureStatus.CANCELLED);
-        when(departureProvider.nextDepartures()).thenReturn(List.of(onTime, delayed, cancelled));
+        when(departureProvider.nextDepartureBoard())
+                .thenReturn(new DepartureBoard("Wolfartsweierer Straße", List.of(onTime, delayed, cancelled)));
 
         mockMvc.perform(get("/api/departures"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$.stopName").value("Wolfartsweierer Straße"))
+                .andExpect(jsonPath("$.departures.length()").value(3))
                 // On time: real time shown (falls back to scheduled since no
                 // real-time data), countdown floored to 9 (see comment above).
-                .andExpect(jsonPath("$[0].line").value("S2"))
-                .andExpect(jsonPath("$[0].destination").value("Bad Herrenalb"))
-                .andExpect(jsonPath("$[0].platform").value("Gl. 3"))
-                .andExpect(jsonPath("$[0].statusText").value("pünktlich"))
-                .andExpect(jsonPath("$[0].statusTone").value("ok"))
-                .andExpect(jsonPath("$[0].time").value(now.plusMinutes(10).toString()))
-                .andExpect(jsonPath("$[0].countdownMinutes").value(9))
+                .andExpect(jsonPath("$.departures[0].line").value("S2"))
+                .andExpect(jsonPath("$.departures[0].destination").value("Bad Herrenalb"))
+                .andExpect(jsonPath("$.departures[0].platform").value("Gl. 3"))
+                .andExpect(jsonPath("$.departures[0].statusText").value("pünktlich"))
+                .andExpect(jsonPath("$.departures[0].statusTone").value("ok"))
+                .andExpect(jsonPath("$.departures[0].time").value(now.plusMinutes(10).toString()))
+                .andExpect(jsonPath("$.departures[0].countdownMinutes").value(9))
                 // Delayed: statusText shows the exact scheduled-to-expected
                 // delta (3 min), independent of "now"; time shown is the
                 // real-time estimate, not the scheduled time.
-                .andExpect(jsonPath("$[1].line").value("5"))
-                .andExpect(jsonPath("$[1].destination").value("Rheinstetten Rathaus"))
-                .andExpect(jsonPath("$[1].platform").value("Gl. 2"))
-                .andExpect(jsonPath("$[1].statusText").value("+3 Min"))
-                .andExpect(jsonPath("$[1].statusTone").value("late"))
-                .andExpect(jsonPath("$[1].time").value(now.plusMinutes(8).toString()))
-                .andExpect(jsonPath("$[1].countdownMinutes").value(7))
+                .andExpect(jsonPath("$.departures[1].line").value("5"))
+                .andExpect(jsonPath("$.departures[1].destination").value("Rheinstetten Rathaus"))
+                .andExpect(jsonPath("$.departures[1].platform").value("Gl. 2"))
+                .andExpect(jsonPath("$.departures[1].statusText").value("+3 Min"))
+                .andExpect(jsonPath("$.departures[1].statusTone").value("late"))
+                .andExpect(jsonPath("$.departures[1].time").value(now.plusMinutes(8).toString()))
+                .andExpect(jsonPath("$.departures[1].countdownMinutes").value(7))
                 // Cancelled: no platform data upstream falls back to "Gl. –",
                 // time is still the scheduled time (for the frontend's
                 // struck-through display), and countdownMinutes is null
                 // ("-" in the design) rather than a number.
-                .andExpect(jsonPath("$[2].line").value("2"))
-                .andExpect(jsonPath("$[2].destination").value("Knielingen"))
-                .andExpect(jsonPath("$[2].platform").value("Gl. –"))
-                .andExpect(jsonPath("$[2].statusText").value("fällt aus"))
-                .andExpect(jsonPath("$[2].statusTone").value("cancelled"))
-                .andExpect(jsonPath("$[2].time").value(now.plusMinutes(12).toString()))
-                .andExpect(jsonPath("$[2].countdownMinutes").doesNotExist());
+                .andExpect(jsonPath("$.departures[2].line").value("2"))
+                .andExpect(jsonPath("$.departures[2].destination").value("Knielingen"))
+                .andExpect(jsonPath("$.departures[2].platform").value("Gl. –"))
+                .andExpect(jsonPath("$.departures[2].statusText").value("fällt aus"))
+                .andExpect(jsonPath("$.departures[2].statusTone").value("cancelled"))
+                .andExpect(jsonPath("$.departures[2].time").value(now.plusMinutes(12).toString()))
+                .andExpect(jsonPath("$.departures[2].countdownMinutes").doesNotExist());
     }
 
     @Test
-    void getDeparturesReturnsAnEmptyListRatherThanFailingWhenTheProviderIsNotConfiguredOrUnreachable() throws Exception {
-        when(departureProvider.nextDepartures())
+    void getDeparturesReturnsAnEmptyBoardRatherThanFailingWhenTheProviderIsNotConfiguredOrUnreachable() throws Exception {
+        when(departureProvider.nextDepartureBoard())
                 .thenThrow(new IllegalStateException("simulated: blank/unreachable TRIAS endpoint"));
 
         mockMvc.perform(get("/api/departures"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().json("[]"));
+                .andExpect(content().json("{\"stopName\":null,\"departures\":[]}"));
     }
 
     @Test
-    void getDeparturesReturnsAnEmptyListWhenTheProviderGenuinelyHasNoDepartures() throws Exception {
-        when(departureProvider.nextDepartures()).thenReturn(List.of());
+    void getDeparturesReturnsANullStopNameAndEmptyListWhenTheProviderGenuinelyHasNoDepartures() throws Exception {
+        when(departureProvider.nextDepartureBoard()).thenReturn(new DepartureBoard(null, List.of()));
 
         mockMvc.perform(get("/api/departures"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content().json("[]"));
+                .andExpect(content().json("{\"stopName\":null,\"departures\":[]}"));
     }
 }

@@ -19,7 +19,7 @@ describe('TransitWeatherPage', () => {
     TestBed.configureTestingModule({
       imports: [TransitWeatherPage],
       providers: [
-        { provide: DeparturesService, useValue: { departures: signal(undefined) } },
+        { provide: DeparturesService, useValue: { departures: signal(undefined), stopName: signal(undefined) } },
         { provide: WeatherService, useValue: { snapshot: signal(undefined) } },
       ],
     });

@@ -140,7 +140,7 @@ class TriasDepartureProvider implements DepartureProvider {
     }
 
     @Override
-    public List<Departure> nextDepartures() {
+    public DepartureBoard nextDepartureBoard() {
         // Fetched as raw bytes, NOT pre-decoded into a String: a real TRIAS
         // endpoint (confirmed with live KVV data) can send UTF-8-encoded
         // German text (e.g. "Wolfartsweierer Straße") in a response whose
@@ -246,22 +246,39 @@ class TriasDepartureProvider implements DepartureProvider {
     }
 
     /**
-     * Parses a {@code StopEventResponse} body into our own {@link Departure}
-     * list via DOM/XPath, per this class's javadoc ("no XML-binding
-     * dependency"). Structure per {@code Trias_StopEvents.xsd}/{@code
-     * Trias_JourneySupport.xsd}/{@code Trias_LocationSupport.xsd} (fetched
-     * live from github.com/VDVde/TRIAS): one {@code StopEventResult} per
-     * departure, each wrapping a {@code StopEvent} whose {@code ThisCall/
-     * CallAtStop} carries the stop-specific timing/platform, and whose
-     * {@code Service} carries the line/destination/cancellation status.
+     * Parses a {@code StopEventResponse} body into our own {@link
+     * DepartureBoard} via DOM/XPath, per this class's javadoc ("no
+     * XML-binding dependency"). Structure per {@code Trias_StopEvents.xsd}/
+     * {@code Trias_JourneySupport.xsd}/{@code Trias_LocationSupport.xsd}
+     * (fetched live from github.com/VDVde/TRIAS): one {@code
+     * StopEventResult} per departure, each wrapping a {@code StopEvent}
+     * whose {@code ThisCall/CallAtStop} carries the stop-specific timing/
+     * platform/stop name, and whose {@code Service} carries the
+     * line/destination/cancellation status.
      *
      * <p>Takes the raw response bytes (never a pre-decoded {@code String} —
-     * see {@link #nextDepartures()}'s comment on why) and hands them to
+     * see {@link #nextDepartureBoard()}'s comment on why) and hands them to
      * {@link DocumentBuilder#parse(java.io.InputStream)} directly, so the
      * parser itself resolves the correct character encoding from the
      * document.
+     *
+     * <p><b>Stop name extraction, "first non-blank wins".</b> {@code
+     * StopPointName/Text} lives inside each {@code CallAtStop} — i.e. it is
+     * repeated once per departure, not carried once for the whole response
+     * (see {@link DepartureBoard}'s javadoc for why that shape pushed the
+     * name out into a wrapper type rather than a per-{@link Departure}
+     * field). This dashboard only ever queries one {@code StopPointRef} per
+     * request (see {@code docs/departures-widget-plan.md}'s "Out of scope"
+     * section — no stop picker), so every {@code CallAtStop} in a given
+     * response is expected to name the exact same stop; this loop simply
+     * takes the first non-blank {@code StopPointName/Text} it finds across
+     * all {@code StopEventResult}s and ignores the rest; a response with no
+     * departures at all (or where every entry happens to omit the element)
+     * leaves {@link DepartureBoard#stopName()} {@code null} — a real,
+     * expected state (see {@link DeparturesController} for how this
+     * ultimately renders), not a parsing error.
      */
-    private List<Departure> parseStopEventResponse(byte[] responseXml) {
+    private DepartureBoard parseStopEventResponse(byte[] responseXml) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
@@ -280,10 +297,20 @@ class TriasDepartureProvider implements DepartureProvider {
                     "//trias:StopEventResult", document, XPathConstants.NODESET);
 
             List<Departure> departures = new ArrayList<>();
+            String stopName = null;
             for (int i = 0; i < resultNodes.getLength(); i++) {
-                departures.add(toDeparture((Element) resultNodes.item(i), xpath));
+                Element stopEventResult = (Element) resultNodes.item(i);
+                departures.add(toDeparture(stopEventResult, xpath));
+
+                if (stopName == null) {
+                    String candidate = textAt(xpath, stopEventResult,
+                            "trias:StopEvent/trias:ThisCall/trias:CallAtStop/trias:StopPointName/trias:Text");
+                    if (!isBlank(candidate)) {
+                        stopName = candidate;
+                    }
+                }
             }
-            return departures;
+            return new DepartureBoard(stopName, departures);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse TRIAS StopEventResponse", e);
         }
