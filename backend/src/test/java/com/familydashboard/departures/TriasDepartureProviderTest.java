@@ -269,6 +269,92 @@ class TriasDepartureProviderTest {
     }
 
     /**
+     * Regression test for a real bug reported against live KVV data: every
+     * departure's countdown showed "in 0 Min" regardless of how far away it
+     * actually was. Root cause (see {@link
+     * TriasDepartureProvider#parseDateTime(String)}'s own javadoc): the old
+     * code was {@code OffsetDateTime.parse(...).toLocalDateTime()}, which
+     * discards the parsed offset and keeps only the raw digits written in
+     * the source string - correct only by coincidence when the source's own
+     * offset already matches {@code Europe/Berlin}'s real current offset,
+     * which every <em>other</em> fixture in this test class happens to use
+     * (always {@code "+02:00"}, matching CEST on their shared {@code
+     * 2026-10-01} date). That's exactly the gap that let the bug through: a
+     * fixture whose offset always happens to match the assumption the buggy
+     * code made can never exercise the bug, regardless of how many other
+     * cases it covers.
+     *
+     * <p>{@code trias-stop-event-response-utc-offset.xml} deliberately uses
+     * offsets that do NOT match {@code Europe/Berlin} - literal UTC ({@code
+     * "Z"}), explicit {@code "+00:00"}, and an arbitrary unrelated {@code
+     * "+05:00"} - so a correct, instant-based conversion is the only way to
+     * pass this test; the old offset-stripping code would produce the raw
+     * (wrong) source digits unchanged instead of the correct Berlin
+     * wall-clock time asserted below.
+     */
+    @Test
+    void nextDeparturesConvertsNonBerlinOffsetTimestampsToTheCorrectBerlinWallClockTime() {
+        wireMockServer.stubFor(post(urlPathEqualTo("/trias"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(readFixture("trias-stop-event-response-utc-offset.xml"))));
+
+        var departures = provider.nextDepartureBoard().departures();
+        assertThat(departures).hasSize(2);
+
+        // Source: "2026-10-01T06:15:00Z" / "2026-10-01T06:15:00+00:00" - the
+        // same UTC instant, which is 2026-10-01T08:15:00 in Europe/Berlin
+        // (CEST, +02:00) on this date. The old offset-stripping code would
+        // have wrongly kept the literal "06:15" digits instead.
+        Departure utcAndExplicitZeroOffset = departures.get(0);
+        assertThat(utcAndExplicitZeroOffset.scheduledTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 15));
+        assertThat(utcAndExplicitZeroOffset.expectedTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 15));
+
+        // Source: "2026-10-01T13:20:00+05:00" - an offset that is neither
+        // Europe/Berlin's nor UTC's, to prove the fix genuinely converts via
+        // the instant rather than special-casing "Z"/"+00:00". Equivalent to
+        // 2026-10-01T08:20:00 UTC, i.e. 2026-10-01T10:20:00 in Europe/Berlin.
+        Departure arbitraryOffset = departures.get(1);
+        assertThat(arbitraryOffset.scheduledTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 10, 20));
+        assertThat(arbitraryOffset.expectedTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 10, 20));
+    }
+
+    /**
+     * End-to-end regression test for the same "in 0 Min" bug, this time
+     * through the full raw-XML -> {@link Departure} -> {@link
+     * DepartureDto#countdownMinutes()} path with a known reference "now",
+     * closing the gap the DTO-level test ({@code DeparturesControllerTest})
+     * can't: that test only ever constructs {@link Departure} test doubles
+     * directly with real-clock-relative {@link LocalDateTime} values,
+     * bypassing XML parsing (and therefore {@link
+     * TriasDepartureProvider#parseDateTime(String)}) entirely. Using the same
+     * non-Berlin-offset fixture as above with a "now" exactly 10 minutes
+     * before the parsed (correct) Berlin time, this asserts a genuinely
+     * non-zero, non-negative countdown - against the old offset-stripping
+     * code, the wrongly-shifted-into-the-past "06:15" parse would make this
+     * departure appear to already be 1 hour 45 minutes in the past, which
+     * {@code countdownMinutes}'s {@code Math.max(0, ...)} flooring would
+     * collapse to exactly the reported symptom: a uniform {@code 0}.
+     */
+    @Test
+    void endToEndCountdownIsCorrectlyNonZeroWhenTheSourceTimestampUsesANonBerlinOffset() {
+        wireMockServer.stubFor(post(urlPathEqualTo("/trias"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(readFixture("trias-stop-event-response-utc-offset.xml"))));
+
+        var departures = provider.nextDepartureBoard().departures();
+        Departure departure = departures.get(0);
+
+        // The correct parse is 08:15 Berlin time (see the test above); "now"
+        // 10 minutes earlier should yield a countdown of 10, never 0.
+        LocalDateTime now = departure.scheduledTime().minusMinutes(10);
+        DepartureDto dto = DepartureDto.from(departure, now);
+
+        assertThat(dto.countdownMinutes()).isEqualTo(10);
+    }
+
+    /**
      * Zero {@code StopEventResult} entries is a genuinely valid TRIAS
      * response ("no departures in the queried window"), not an error - see
      * {@code DeparturesController}'s own handling of this case. With no

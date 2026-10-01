@@ -348,8 +348,44 @@ class TriasDepartureProvider implements DepartureProvider {
         return DepartureStatus.ON_TIME;
     }
 
+    /**
+     * Parses a TRIAS {@code TimetabledTime}/{@code EstimatedTime} value (an
+     * ISO-8601 offset date-time, e.g. {@code "2026-10-01T08:15:00+02:00"})
+     * into the {@link #ZONE}-local wall-clock time.
+     *
+     * <p><b>Must convert via the instant, never just strip the offset.</b> An
+     * earlier version of this method was {@code
+     * OffsetDateTime.parse(isoOffsetDateTime).toLocalDateTime()} — which
+     * discards the parsed offset entirely and keeps only the raw year/month/
+     * day/hour/minute/second digits exactly as written in the source string,
+     * regardless of what that offset was. That's only correct by coincidence
+     * when the source's own offset already equals {@link #ZONE}'s real
+     * current offset ({@code +02:00} in summer/CEST, {@code +01:00} in
+     * winter/CET) — exactly true of every example this class's own test
+     * fixtures use, which is why the old code passed every test while still
+     * being wrong. A real backend that serializes its timestamps in a
+     * different offset convention (e.g. UTC, {@code "...Z"} or {@code
+     * "+00:00"} — common for systems that store everything in UTC regardless
+     * of what a particular protocol's examples assume) would have every
+     * parsed time silently shifted by whatever the offset difference is (1-2
+     * hours for UTC vs. Europe/Berlin), with no error — confirmed as the root
+     * cause of a live-data bug report where every departure's countdown
+     * showed "in 0 Min" regardless of how far away it actually was: a
+     * backend emitting UTC timestamps would make every parsed {@code
+     * scheduledTime}/{@code expectedTime} appear 1-2 hours further in the
+     * past than it really is relative to the correctly Europe/Berlin-
+     * computed "now", which {@link DepartureDto}'s countdown flooring then
+     * renders as a uniform {@code 0} for every departure.
+     *
+     * <p>{@code atZoneSameInstant(ZONE)} instead resolves the parsed value to
+     * the actual instant it represents (using its own offset, whatever that
+     * is) and then re-expresses that same instant in {@link #ZONE} — correct
+     * regardless of what offset convention the source uses, and identical to
+     * the old behavior in the already-covered case where the source offset
+     * happens to equal {@link #ZONE}'s current real offset.
+     */
     private static LocalDateTime parseDateTime(String isoOffsetDateTime) {
-        return OffsetDateTime.parse(isoOffsetDateTime).toLocalDateTime();
+        return OffsetDateTime.parse(isoOffsetDateTime).atZoneSameInstant(ZONE).toLocalDateTime();
     }
 
     private static String textAt(XPath xpath, Element context, String expression) throws Exception {

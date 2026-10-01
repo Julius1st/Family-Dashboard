@@ -4,7 +4,7 @@
   live KVV (Karlsruhe) data: a destination text containing the German "ß"
   ("Wolfartsweierer Straße") rendered as two garbled characters.
 
-  Root cause (see TriasDepartureProvider.nextDepartures()'s own comment):
+  Root cause (see TriasDepartureProvider.nextDepartureBoard()'s own comment):
   the response body was read into a java.lang.String via RestClient's
   default StringHttpMessageConverter BEFORE being handed to the XML parser.
   That converter falls back to ISO-8859-1 whenever the HTTP response's

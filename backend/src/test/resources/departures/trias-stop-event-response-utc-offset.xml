@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Regression fixture for a real bug reported against live KVV data: every
+  departure's countdown showed "in 0 Min" regardless of how far away it
+  actually was. Root cause (see
+  TriasDepartureProvider.parseDateTime(String)'s own javadoc): the old
+  parsing code called OffsetDateTime.parse(...).toLocalDateTime(), which
+  discards the parsed offset and keeps only the raw digits written in the
+  source string - correct only by coincidence when the source's own offset
+  already equals Europe/Berlin's real current offset, which every other
+  fixture in this directory happens to use ("+02:00", matching CEST on the
+  fixtures' own 2026-10-01 dates). That coincidence is exactly what let the
+  bug through: a real backend serializing timestamps in a different offset
+  convention (e.g. UTC) would have every parsed time silently shifted by the
+  offset difference.
+
+  This fixture deliberately uses TWO non-Berlin-matching offset spellings for
+  the same entry - TimetabledTime as literal UTC ("Z") and EstimatedTime as
+  explicit "+00:00" - both representing 2026-10-01T06:15:00 UTC, which is
+  2026-10-01T08:15:00 in Europe/Berlin (CEST, +02:00) on this date. A correct,
+  instant-based parse must produce that 08:15 Berlin wall-clock time from
+  both; the old offset-stripping code would instead have produced the literal
+  (wrong) "06:15" digits unchanged.
+-->
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+    <ServiceDelivery>
+        <siri:ResponseTimestamp>2026-10-01T08:00:00+02:00</siri:ResponseTimestamp>
+        <siri:ProducerRef>MobiData-BW</siri:ProducerRef>
+        <siri:Status>true</siri:Status>
+        <DeliveryPayload>
+            <StopEventResponse>
+                <StopEventResult>
+                    <ResultId>1</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>Gleis 3</Text>
+                                </PlannedBay>
+                                <EstimatedBay>
+                                    <Text>Gleis 3</Text>
+                                </EstimatedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T06:15:00Z</TimetabledTime>
+                                    <EstimatedTime>2026-10-01T06:15:00+00:00</EstimatedTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10001</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>S2</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>S2</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Bad Herrenalb</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+                <StopEventResult>
+                    <ResultId>2</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>Gleis 2</Text>
+                                </PlannedBay>
+                                <EstimatedBay>
+                                    <Text>Gleis 2</Text>
+                                </EstimatedBay>
+                                <ServiceDeparture>
+                                    <!--
+                                      An arbitrary offset that is neither
+                                      Europe/Berlin's nor UTC, to prove the
+                                      fix genuinely converts via the instant
+                                      rather than special-casing "Z"/"+00:00".
+                                      "2026-10-01T13:20:00+05:00" is the same
+                                      instant as 2026-10-01T08:20:00 UTC,
+                                      which is 2026-10-01T10:20:00 in
+                                      Europe/Berlin (CEST, +02:00).
+                                    -->
+                                    <TimetabledTime>2026-10-01T13:20:00+05:00</TimetabledTime>
+                                    <EstimatedTime>2026-10-01T13:20:00+05:00</EstimatedTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10002</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>5</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>5</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Rheinstetten Rathaus</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+            </StopEventResponse>
+        </DeliveryPayload>
+    </ServiceDelivery>
+</Trias>
