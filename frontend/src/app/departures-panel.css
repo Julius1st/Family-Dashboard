@@ -128,14 +128,25 @@
   color: var(--ink-primary);
 }
 
-/* Platform: fixed 56px, right-aligned, mono 15 ink/muted, "Gl. X" (handoff,
-   column 3) - already pre-formatted by the backend's DepartureDto, so this
-   only styles it, never formats it. */
+/* Platform: right-aligned, mono 15 ink/muted, "Gl. X" (handoff, column 3,
+   originally a fixed 56px) - already pre-formatted by the backend's
+   DepartureDto, so this only styles it, never formats it. Widened from the
+   handoff's original 56px and given `white-space: nowrap`: real-world
+   platform values (confirmed against live KVV data) can run longer than the
+   handoff's single-digit sample ("Gl. 1"), e.g. two-digit bays ("Gl. 12")
+   or letter-suffixed ones ("Gl. 3a") - at 56px with the default wrapping
+   `<p>` these were squeezed onto two lines instead of staying on one. The
+   extra width comes out of `.departures-panel__destination`'s `flex: 1
+   1 auto` share (same row, `gap: 20px` between columns unchanged), which
+   still truncates with its own ellipsis exactly as before - only the
+   fixed-width columns themselves (line badge, status, time block) are
+   untouched, so their alignment across rows is unaffected. */
 .departures-panel__platform {
   flex: none;
-  width: 56px;
+  width: 72px;
   margin: 0;
   text-align: right;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: 15px;
   font-weight: 400;

@@ -146,6 +146,72 @@ class TriasDepartureProviderTest {
     }
 
     /**
+     * Regression test for a real bug seen against live KVV (Karlsruhe)
+     * data: KVV's actual {@code PlannedBay}/{@code EstimatedBay} text
+     * already spells out the German word "Gleis" in full (e.g. {@code
+     * "Gleis 3"}), unlike the bare-number convention this fixture used
+     * before this bug was found. {@link DepartureDto#from} separately
+     * prepends its own {@code "Gl. "} label for display, so without
+     * stripping "Gleis" here first, the two would double up into {@code
+     * "Gl. Gleis 3"} rather than the intended {@code "Gl. 3"}. {@code
+     * trias-stop-event-response.xml} now deliberately mixes both
+     * conventions (entry 1: {@code "Gleis 3"}/{@code "GLEIS 3"} mixed
+     * case, entry 3: {@code "gleis 2"}/{@code "gleis2"} lowercase with and
+     * without a space) so {@link Departure#platform()} is asserted bare
+     * (e.g. {@code "3"}, never {@code "Gleis 3"}) for every one of them in
+     * {@link #nextDeparturesParsesOnTimeDelayedAndCancelledDepartures()}
+     * above - this test only re-confirms entry 1 end-to-end through the
+     * display-facing {@link DepartureDto}, so the exact "Gl. 3" (not "Gl.
+     * Gleis 3") final string is covered too, not just the intermediate
+     * {@link Departure#platform()} value.
+     */
+    @Test
+    void nextDeparturesStripsTheRedundantGleisWordFromARealKvvStylePlatformValue() {
+        wireMockServer.stubFor(post(urlPathEqualTo("/trias"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(readFixture("trias-stop-event-response.xml"))));
+
+        var departures = provider.nextDepartures();
+
+        Departure onTimeConfirmed = departures.get(0);
+        assertThat(onTimeConfirmed.platform()).isEqualTo("3");
+
+        DepartureDto dto = DepartureDto.from(onTimeConfirmed, onTimeConfirmed.scheduledTime().minusMinutes(5));
+        assertThat(dto.platform()).isEqualTo("Gl. 3");
+    }
+
+    /**
+     * Regression test for a real bug seen against live KVV data: a
+     * destination containing the German "ß" ("Wolfartsweierer Straße")
+     * rendered as two garbled characters. Root cause (see {@link
+     * TriasDepartureProvider#nextDepartures()}'s own comment): the response
+     * body was read into a {@code String} via {@code RestClient}'s default
+     * message converter BEFORE being handed to the XML parser, and that
+     * converter falls back to ISO-8859-1 whenever the HTTP response's
+     * {@code Content-Type} header carries no explicit {@code charset}
+     * parameter - exactly what's stubbed below (a bare {@code "text/xml"}
+     * header, no {@code ;charset=...}), while the body bytes served are
+     * genuinely UTF-8-encoded (this fixture's actual on-disk bytes, served
+     * via {@code withBody(byte[])} so WireMock can't silently re-encode
+     * them). This fails against the pre-fix code (which read the body as a
+     * {@code String} first, mangling it before parsing) and passes once the
+     * parser is handed the raw bytes directly.
+     */
+    @Test
+    void nextDeparturesCorrectlyDecodesNonAsciiGermanTextEvenWithNoCharsetInTheContentTypeHeader() {
+        wireMockServer.stubFor(post(urlPathEqualTo("/trias"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(readFixtureBytes("trias-stop-event-response-non-ascii.xml"))));
+
+        var departures = provider.nextDepartures();
+
+        assertThat(departures).hasSize(1);
+        assertThat(departures.get(0).destination()).isEqualTo("Wolfartsweierer Straße");
+    }
+
+    /**
      * Acceptance criterion 2: the request-building logic must be genuinely
      * testable without any real, non-empty {@code application.yml} values -
      * exactly the state this project is in until MobiData BW grants access
@@ -195,6 +261,24 @@ class TriasDepartureProviderTest {
         try {
             Path path = new ClassPathResource("departures/" + fileName).getFile().toPath();
             return Files.readString(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Same as {@link #readFixture(String)} but returns the fixture's raw
+     * on-disk bytes rather than a decoded {@code String}, so a WireMock stub
+     * can serve them byte-for-byte via {@code withBody(byte[])} — needed for
+     * {@link #nextDeparturesCorrectlyDecodesNonAsciiGermanTextEvenWithNoCharsetInTheContentTypeHeader()},
+     * which must guarantee the bytes actually sent over the wire are
+     * genuinely UTF-8-encoded, not re-encoded by some intermediate {@code
+     * String} round-trip.
+     */
+    private static byte[] readFixtureBytes(String fileName) {
+        try {
+            Path path = new ClassPathResource("departures/" + fileName).getFile().toPath();
+            return Files.readAllBytes(path);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

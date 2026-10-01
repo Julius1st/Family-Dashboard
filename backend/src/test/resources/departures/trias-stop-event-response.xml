@@ -20,6 +20,14 @@
     3. delayed by 3 minutes (EstimatedTime 3 minutes after TimetabledTime) -
        matches the design handoff's own "+3 Min" example.
     4. cancelled (Service/Cancelled = true)
+
+  PlannedBay/EstimatedBay also deliberately mix two real-world conventions,
+  confirmed against live KVV (Karlsruhe) data: entry 1 spells the German
+  word "Gleis" out in full ("Gleis 3"/mixed case "GLEIS 3") - the actual KVV
+  shape, which TriasDepartureProvider.normalizePlatform() must strip so the
+  frontend's "Gl. " label isn't doubled into "Gl. Gleis 3" - while entries 2
+  and 4 keep the original bare-number convention this fixture used before
+  that bug was found, so both shapes stay covered.
 -->
 <Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
     <ServiceDelivery>
@@ -38,10 +46,10 @@
                                     <Text>Marktplatz</Text>
                                 </StopPointName>
                                 <PlannedBay>
-                                    <Text>3</Text>
+                                    <Text>Gleis 3</Text>
                                 </PlannedBay>
                                 <EstimatedBay>
-                                    <Text>3</Text>
+                                    <Text>GLEIS 3</Text>
                                 </EstimatedBay>
                                 <ServiceDeparture>
                                     <TimetabledTime>2026-10-01T08:15:00+02:00</TimetabledTime>
@@ -116,10 +124,10 @@
                                     <Text>Marktplatz</Text>
                                 </StopPointName>
                                 <PlannedBay>
-                                    <Text>2</Text>
+                                    <Text>gleis 2</Text>
                                 </PlannedBay>
                                 <EstimatedBay>
-                                    <Text>2</Text>
+                                    <Text>gleis2</Text>
                                 </EstimatedBay>
                                 <ServiceDeparture>
                                     <TimetabledTime>2026-10-01T08:20:00+02:00</TimetabledTime>

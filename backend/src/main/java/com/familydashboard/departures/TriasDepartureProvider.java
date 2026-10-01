@@ -1,12 +1,13 @@
 package com.familydashboard.departures;
 
-import java.io.StringReader;
+import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
@@ -22,7 +23,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 /**
  * The one real {@link DepartureProvider} implementation: builds a TRIAS
@@ -105,6 +105,15 @@ class TriasDepartureProvider implements DepartureProvider {
      */
     private static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
 
+    /**
+     * Matches the German word "Gleis" (case-insensitively) plus any
+     * whitespace immediately following it, e.g. in {@code "Gleis 1"} or
+     * {@code "GLEIS1"}. Used by {@link #normalizePlatform(String)} to strip
+     * it out of a raw {@code PlannedBay}/{@code EstimatedBay} value before
+     * {@link DepartureDto#from} prepends its own {@code "Gl. "} label.
+     */
+    private static final Pattern GLEIS_LABEL = Pattern.compile("(?i)gleis\\s*");
+
     private final RestClient restClient;
     private final TransitProperties transitProperties;
 
@@ -116,12 +125,26 @@ class TriasDepartureProvider implements DepartureProvider {
 
     @Override
     public List<Departure> nextDepartures() {
-        String responseBody = restClient.post()
+        // Fetched as raw bytes, NOT pre-decoded into a String: a real TRIAS
+        // endpoint (confirmed with live KVV data) can send UTF-8-encoded
+        // German text (e.g. "Wolfartsweierer Straße") in a response whose
+        // Content-Type header carries no explicit charset parameter. Spring's
+        // StringHttpMessageConverter falls back to ISO-8859-1 in that case,
+        // which would silently mangle every non-ASCII character (the
+        // classic "ß" -> two-garbled-characters mojibake bug) before the XML
+        // parser ever saw it - and a String, once wrongly decoded, can't be
+        // un-corrupted downstream. Handing the DocumentBuilder the raw bytes
+        // instead lets it determine the real encoding itself, the same way
+        // any XML parser is supposed to: from the document's own {@code
+        // <?xml ... encoding="UTF-8"?>} declaration (falling back to a
+        // detected BOM, then UTF-8) - independent of whatever charset (or
+        // lack thereof) the HTTP layer reported.
+        byte[] responseBody = restClient.post()
                 .uri(transitProperties.endpointUrl())
                 .contentType(MediaType.TEXT_XML)
                 .body(buildStopEventRequest())
                 .retrieve()
-                .body(String.class);
+                .body(byte[].class);
         return parseStopEventResponse(responseBody);
     }
 
@@ -215,8 +238,14 @@ class TriasDepartureProvider implements DepartureProvider {
      * departure, each wrapping a {@code StopEvent} whose {@code ThisCall/
      * CallAtStop} carries the stop-specific timing/platform, and whose
      * {@code Service} carries the line/destination/cancellation status.
+     *
+     * <p>Takes the raw response bytes (never a pre-decoded {@code String} —
+     * see {@link #nextDepartures()}'s comment on why) and hands them to
+     * {@link DocumentBuilder#parse(java.io.InputStream)} directly, so the
+     * parser itself resolves the correct character encoding from the
+     * document.
      */
-    private List<Departure> parseStopEventResponse(String responseXml) {
+    private List<Departure> parseStopEventResponse(byte[] responseXml) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
@@ -226,7 +255,7 @@ class TriasDepartureProvider implements DepartureProvider {
             // ultimately comes from an external HTTP endpoint).
             factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             DocumentBuilder builder = factory.newDocumentBuilder();
-            org.w3c.dom.Document document = builder.parse(new InputSource(new StringReader(responseXml)));
+            org.w3c.dom.Document document = builder.parse(new ByteArrayInputStream(responseXml));
 
             XPath xpath = XPathFactory.newInstance().newXPath();
             xpath.setNamespaceContext(triasNamespaceContext());
@@ -246,8 +275,8 @@ class TriasDepartureProvider implements DepartureProvider {
 
     private static Departure toDeparture(Element stopEventResult, XPath xpath) throws Exception {
         String platform = firstNonBlank(
-                textAt(xpath, stopEventResult, "trias:StopEvent/trias:ThisCall/trias:CallAtStop/trias:EstimatedBay/trias:Text"),
-                textAt(xpath, stopEventResult, "trias:StopEvent/trias:ThisCall/trias:CallAtStop/trias:PlannedBay/trias:Text"));
+                normalizePlatform(textAt(xpath, stopEventResult, "trias:StopEvent/trias:ThisCall/trias:CallAtStop/trias:EstimatedBay/trias:Text")),
+                normalizePlatform(textAt(xpath, stopEventResult, "trias:StopEvent/trias:ThisCall/trias:CallAtStop/trias:PlannedBay/trias:Text")));
 
         LocalDateTime scheduledTime = parseDateTime(textAt(xpath, stopEventResult,
                 "trias:StopEvent/trias:ThisCall/trias:CallAtStop/trias:ServiceDeparture/trias:TimetabledTime"));
@@ -293,6 +322,31 @@ class TriasDepartureProvider implements DepartureProvider {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    /**
+     * Strips the German word "Gleis" ("platform"/"track") out of a raw
+     * {@code PlannedBay}/{@code EstimatedBay} value, case-insensitively.
+     *
+     * <p>Confirmed against real KVV (Karlsruhe) data: unlike this class's
+     * synthetic WireMock test fixture — which, matching some other TRIAS
+     * operators' convention, carries a bare number (e.g. {@code "3"}) — KVV's
+     * real {@code PlannedBay}/{@code EstimatedBay} text already spells out
+     * {@code "Gleis 1"} in full. {@link Departure#platform()}'s contract is
+     * the bare value (e.g. {@code "3"}; see its javadoc) — {@link
+     * DepartureDto#from} is the one place that prepends the {@code "Gl. "}
+     * label for display, so leaving {@code "Gleis"} in here would double up
+     * into {@code "Gl. Gleis 1"} once displayed. Normalizing here, in the
+     * adapter, keeps that TRIAS/operator-specific quirk from leaking past
+     * this class, per this project's provider/DTO convention (see {@code
+     * CLAUDE.md}).
+     */
+    private static String normalizePlatform(String rawBay) {
+        if (rawBay == null) {
+            return null;
+        }
+        String normalized = GLEIS_LABEL.matcher(rawBay).replaceAll("").trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private static String escapeXml(String value) {

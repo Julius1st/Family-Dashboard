@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Regression fixture for the UTF-8/Latin-1 mojibake bug reported against
+  live KVV (Karlsruhe) data: a destination text containing the German "ß"
+  ("Wolfartsweierer Straße") rendered as two garbled characters.
+
+  Root cause (see TriasDepartureProvider.nextDepartures()'s own comment):
+  the response body was read into a java.lang.String via RestClient's
+  default StringHttpMessageConverter BEFORE being handed to the XML parser.
+  That converter falls back to ISO-8859-1 whenever the HTTP response's
+  Content-Type header carries no explicit charset parameter - exactly what
+  TriasDepartureProviderTest's "non-ASCII" test below simulates by stubbing
+  a bare "text/xml" Content-Type header (no ";charset=...") while still
+  serving genuinely UTF-8-encoded bytes, same as the real endpoint does.
+  Once a String has been wrongly decoded this way, the corruption can't be
+  undone downstream - the fix is to hand the parser the raw bytes directly
+  and let it determine the encoding itself (from this document's own
+  encoding="UTF-8" declaration above), independent of the HTTP layer.
+
+  One minimal StopEventResult entry is enough to exercise this; it reuses
+  trias-stop-event-response.xml's structure/schema, just trimmed down to a
+  single entry with a non-ASCII destination.
+-->
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+    <ServiceDelivery>
+        <siri:ResponseTimestamp>2026-10-01T08:00:00+02:00</siri:ResponseTimestamp>
+        <siri:ProducerRef>MobiData-BW</siri:ProducerRef>
+        <siri:Status>true</siri:Status>
+        <DeliveryPayload>
+            <StopEventResponse>
+                <StopEventResult>
+                    <ResultId>1</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:623</StopPointRef>
+                                <StopPointName>
+                                    <Text>Wolfartsweierer Straße</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>Gleis 1</Text>
+                                </PlannedBay>
+                                <EstimatedBay>
+                                    <Text>Gleis 1</Text>
+                                </EstimatedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:15:00+02:00</TimetabledTime>
+                                    <EstimatedTime>2026-10-01T08:15:00+02:00</EstimatedTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10001</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>5</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>tram</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>5</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Wolfartsweierer Straße</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+            </StopEventResponse>
+        </DeliveryPayload>
+    </ServiceDelivery>
+</Trias>
