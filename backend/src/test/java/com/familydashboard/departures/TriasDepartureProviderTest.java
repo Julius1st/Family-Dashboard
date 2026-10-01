@@ -327,14 +327,30 @@ class TriasDepartureProviderTest {
      * can't: that test only ever constructs {@link Departure} test doubles
      * directly with real-clock-relative {@link LocalDateTime} values,
      * bypassing XML parsing (and therefore {@link
-     * TriasDepartureProvider#parseDateTime(String)}) entirely. Using the same
-     * non-Berlin-offset fixture as above with a "now" exactly 10 minutes
-     * before the parsed (correct) Berlin time, this asserts a genuinely
-     * non-zero, non-negative countdown - against the old offset-stripping
-     * code, the wrongly-shifted-into-the-past "06:15" parse would make this
-     * departure appear to already be 1 hour 45 minutes in the past, which
-     * {@code countdownMinutes}'s {@code Math.max(0, ...)} flooring would
-     * collapse to exactly the reported symptom: a uniform {@code 0}.
+     * TriasDepartureProvider#parseDateTime(String)}) entirely.
+     *
+     * <p><b>"now" must be an independent, hardcoded reference time - never
+     * derived from the parsed {@code departure.scheduledTime()} itself.</b>
+     * An earlier version of this test computed {@code now} as {@code
+     * departure.scheduledTime().minusMinutes(10)}, which is tautological and
+     * provides zero regression protection: whether {@code parseDateTime} is
+     * correct or buggy, {@code now} and the departure's time shift together
+     * by the exact same (possibly wrong) offset error, so {@code
+     * Duration.between(now, time)} always comes out to exactly 10 minutes
+     * regardless of whether the parse was actually correct - confirmed by
+     * reverting {@link TriasDepartureProvider#parseDateTime(String)} to the
+     * old offset-stripping {@code .toLocalDateTime()} code and rerunning:
+     * that version passed even with the bug reintroduced. Using a fixed
+     * {@code LocalDateTime.of(2026, 10, 1, 8, 5, 0)} instead - 10 minutes
+     * before the fixture's independently-known-correct Berlin-equivalent
+     * time (08:15, see the test above and the fixture's own comment) - means
+     * the old buggy code's wrongly-parsed 06:15 would make the departure
+     * appear already 1 hour 50 minutes in the past relative to this fixed
+     * reference, which {@code countdownMinutes}'s {@code Math.max(0, ...)}
+     * flooring collapses to {@code 0} - not {@code 10} - exactly the
+     * reported symptom. Re-confirmed by reverting {@code parseDateTime}
+     * again and rerunning with this fixed-reference version: it now
+     * genuinely fails (asserts 10, gets 0) against the old code.
      */
     @Test
     void endToEndCountdownIsCorrectlyNonZeroWhenTheSourceTimestampUsesANonBerlinOffset() {
@@ -346,9 +362,14 @@ class TriasDepartureProviderTest {
         var departures = provider.nextDepartureBoard().departures();
         Departure departure = departures.get(0);
 
-        // The correct parse is 08:15 Berlin time (see the test above); "now"
-        // 10 minutes earlier should yield a countdown of 10, never 0.
-        LocalDateTime now = departure.scheduledTime().minusMinutes(10);
+        // Fixed, independent reference time - 10 minutes before the
+        // fixture's known-correct Berlin-equivalent time of 08:15 (see
+        // trias-stop-event-response-utc-offset.xml's own comment: its first
+        // entry's "2026-10-01T06:15:00Z"/"...+00:00" is that UTC instant,
+        // which is 2026-10-01T08:15:00 in Europe/Berlin CEST). Deliberately
+        // NOT derived from departure.scheduledTime() - see this test's
+        // javadoc for why that would make the assertion tautological.
+        LocalDateTime now = LocalDateTime.of(2026, 10, 1, 8, 5, 0);
         DepartureDto dto = DepartureDto.from(departure, now);
 
         assertThat(dto.countdownMinutes()).isEqualTo(10);
