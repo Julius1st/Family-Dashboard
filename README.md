@@ -41,6 +41,16 @@ Both the backend and frontend can be run today (from the repo root):
 The Maven wrapper in `backend/` fetches Maven itself, so no local install is
 required.
 
+### Local secrets
+
+The departures widget's TRIAS `requestor-ref` credential is not committed —
+put it in a `backend/.env` file (gitignored), which Spring Boot loads
+automatically:
+
+```
+TRANSIT_REQUESTOR_REF=your-real-requestor-ref
+```
+
 ## Run with Docker
 
 The whole app (Angular frontend + Spring Boot backend + H2 database) ships as
