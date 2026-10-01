@@ -17,10 +17,18 @@ import java.time.LocalDateTime;
  *                      {@code LineRef} if no published name is given).
  * @param destination   the service's destination text, e.g. {@code "Bad
  *                      Herrenalb"} (TRIAS {@code DestinationText}).
- * @param platform      the boarding bay/platform, e.g. {@code "3"} (TRIAS
+ * @param platform      the boarding bay/platform, already fully formatted
+ *                      for display, e.g. {@code "Gl. 3"} for a tram/train
+ *                      track or {@code "Bstg. 3"} for a bus bay (TRIAS
  *                      {@code EstimatedBay} if real-time data narrowed it
- *                      down, otherwise the planned {@code PlannedBay}), or
- *                      {@code null} if the response carries neither.
+ *                      down, otherwise the planned {@code PlannedBay},
+ *                      normalized by {@code
+ *                      TriasDepartureProvider.normalizePlatform(String)} —
+ *                      which label applies depends on which, if any, label
+ *                      word the raw TRIAS text itself carries, so this field
+ *                      holds the final display string rather than a bare
+ *                      value for a later layer to re-label), or {@code null}
+ *                      if the response carries neither.
  * @param scheduledTime the timetabled departure time (TRIAS {@code
  *                      ServiceDeparture/TimetabledTime}).
  * @param expectedTime  the real-time estimated departure time (TRIAS {@code

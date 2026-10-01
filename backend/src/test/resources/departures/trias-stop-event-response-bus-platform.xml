@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-constructed, synthetic TRIAS StopEventResponse fixture - not a
+  captured real response. Same provenance/construction approach as
+  trias-stop-event-response.xml (see TriasDepartureProviderTest's class
+  javadoc and that fixture's own header comment): built by hand from the
+  official Trias_StopEvents.xsd / Trias_JourneySupport.xsd /
+  Trias_LocationSupport.xsd / Trias_Common.xsd / Trias_ModesSupport.xsd
+  schema files.
+
+  Regression fixture for a real bug seen against live KVV (Karlsruhe) data:
+  unlike trams (which spell out "Gleis"), KVV's real PlannedBay/EstimatedBay
+  text for a BUS departure uses the German abbreviation "Bstg." ("Bussteig" -
+  "bus platform/bay"). Two StopEventResult entries, both on-time with
+  real-time confirmation, mixing two "Bstg." spelling variants the same way
+  the "Gleis" fixture mixes its variants:
+    1. mixed case, with the period: "Bstg. 3" / "BSTG. 3"
+    2. lowercase, no period, with and without a space: "bstg 21" / "bstg21"
+
+  TriasDepartureProvider.normalizePlatform() must recognize "Bstg." as a
+  distinct label from "Gleis" and reformat it into "Bstg. N" - never "Gl.
+  Bstg. N" (doubled AND mislabelled as a tram track) or "Gl. N" (mislabelled
+  only).
+-->
+<Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
+    <ServiceDelivery>
+        <siri:ResponseTimestamp>2026-10-01T08:00:00+02:00</siri:ResponseTimestamp>
+        <siri:ProducerRef>MobiData-BW</siri:ProducerRef>
+        <siri:Status>true</siri:Status>
+        <DeliveryPayload>
+            <StopEventResponse>
+                <StopEventResult>
+                    <ResultId>1</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>Bstg. 3</Text>
+                                </PlannedBay>
+                                <EstimatedBay>
+                                    <Text>BSTG. 3</Text>
+                                </EstimatedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:30:00+02:00</TimetabledTime>
+                                    <EstimatedTime>2026-10-01T08:30:00+02:00</EstimatedTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10005</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>51</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>bus</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>51</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Durlach Turmberg</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+                <StopEventResult>
+                    <ResultId>2</ResultId>
+                    <StopEvent>
+                        <ThisCall>
+                            <CallAtStop>
+                                <StopPointRef>de:08212:1001</StopPointRef>
+                                <StopPointName>
+                                    <Text>Marktplatz</Text>
+                                </StopPointName>
+                                <PlannedBay>
+                                    <Text>bstg 21</Text>
+                                </PlannedBay>
+                                <EstimatedBay>
+                                    <Text>bstg21</Text>
+                                </EstimatedBay>
+                                <ServiceDeparture>
+                                    <TimetabledTime>2026-10-01T08:32:00+02:00</TimetabledTime>
+                                    <EstimatedTime>2026-10-01T08:32:00+02:00</EstimatedTime>
+                                </ServiceDeparture>
+                            </CallAtStop>
+                        </ThisCall>
+                        <Service>
+                            <OperatingDayRef>2026-10-01</OperatingDayRef>
+                            <JourneyRef>10006</JourneyRef>
+                            <ServiceSection>
+                                <LineRef>60</LineRef>
+                                <DirectionRef>1</DirectionRef>
+                                <Mode>
+                                    <PtMode>bus</PtMode>
+                                </Mode>
+                                <PublishedLineName>
+                                    <Text>60</Text>
+                                </PublishedLineName>
+                            </ServiceSection>
+                            <DestinationText>
+                                <Text>Knielingen Nord</Text>
+                            </DestinationText>
+                            <Cancelled>false</Cancelled>
+                        </Service>
+                    </StopEvent>
+                </StopEventResult>
+            </StopEventResponse>
+        </DeliveryPayload>
+    </ServiceDelivery>
+</Trias>

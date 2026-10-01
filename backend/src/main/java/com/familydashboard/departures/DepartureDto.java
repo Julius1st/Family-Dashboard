@@ -16,9 +16,15 @@ import java.time.LocalDateTime;
  * @param destination      the service's destination, e.g. {@code "Bad
  *                         Herrenalb"}.
  * @param platform         pre-formatted for direct display, e.g. {@code "Gl.
- *                         3"} (the design's exact column format), or
+ *                         3"} for a tram/train track or {@code "Bstg. 3"} for
+ *                         a bus bay (both the design's exact column format,
+ *                         already produced as-is by {@link
+ *                         Departure#platform()} — see its javadoc), or
  *                         {@code "Gl. –"} when the upstream response carries
- *                         no bay/platform information at all.
+ *                         no bay/platform information at all (see {@link
+ *                         #from}'s comment on why this generic fallback was
+ *                         kept even though it technically implies a tram
+ *                         track).
  * @param statusText       German status text for the design's status column:
  *                         {@code "pünktlich"}, {@code "+3 Min"} (the delay in
  *                         minutes), or {@code "fällt aus"}.
@@ -53,9 +59,27 @@ public record DepartureDto(
         Integer countdownMinutes) {
 
     static DepartureDto from(Departure departure, LocalDateTime now) {
+        // Departure.platform() is now already the fully-formatted display
+        // label ("Gl. 3", "Bstg. 3", ...) - TriasDepartureProvider's
+        // normalizePlatform() decides which short label applies, since that
+        // depends on TRIAS-specific raw-text quirks this DTO layer shouldn't
+        // reinterpret (see its javadoc). This method's only job left is the
+        // genuinely-no-platform-info-at-all fallback.
+        //
+        // Edge case call: "Gl. –" (rather than something more neutral like
+        // just "–") is kept as that fallback even now that some departures
+        // are buses, where "Gl." specifically implies a tram/train track.
+        // Reasoning: a departure with NO bay/platform information at all is
+        // presumably rare (every real KVV response seen so far - tram or
+        // bus - has carried an explicit label), and this fallback never
+        // claims a wrong label since it's wording for "no information", not
+        // "here is an incorrect label" - matching the generic "–" dash the
+        // rest of the design already uses for "nothing to show" (e.g. the
+        // cancelled countdown). Simplicity wins over a speculative fix for
+        // an unobserved case.
         String platformText = departure.platform() == null || departure.platform().isBlank()
                 ? "Gl. –"
-                : "Gl. %s".formatted(departure.platform());
+                : departure.platform();
 
         return switch (departure.status()) {
             case CANCELLED -> new DepartureDto(

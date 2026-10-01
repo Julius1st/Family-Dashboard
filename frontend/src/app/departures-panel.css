@@ -128,22 +128,39 @@
   color: var(--ink-primary);
 }
 
-/* Platform: right-aligned, mono 15 ink/muted, "Gl. X" (handoff, column 3,
-   originally a fixed 56px) - already pre-formatted by the backend's
-   DepartureDto, so this only styles it, never formats it. Widened from the
-   handoff's original 56px and given `white-space: nowrap`: real-world
-   platform values (confirmed against live KVV data) can run longer than the
-   handoff's single-digit sample ("Gl. 1"), e.g. two-digit bays ("Gl. 12")
-   or letter-suffixed ones ("Gl. 3a") - at 56px with the default wrapping
-   `<p>` these were squeezed onto two lines instead of staying on one. The
-   extra width comes out of `.departures-panel__destination`'s `flex: 1
-   1 auto` share (same row, `gap: 20px` between columns unchanged), which
-   still truncates with its own ellipsis exactly as before - only the
-   fixed-width columns themselves (line badge, status, time block) are
-   untouched, so their alignment across rows is unaffected. */
+/* Platform: right-aligned, mono 15 ink/muted, "Gl. X" / "Bstg. X" (handoff,
+   column 3) - already pre-formatted by the backend's DepartureDto, so this
+   only styles it, never formats it.
+
+   No fixed width: a previous fix pinned this column to 72px because the
+   handoff's original 56px wrapped two-digit tram platforms ("Gl. 12") onto a
+   second line. That fixed-width fix is itself now the wrong tool, since real
+   bus bays (confirmed against live KVV data) use a longer "Bstg. " label
+   than trams' "Gl. " ("Bstg. 21" vs "Gl. 1") - any single fixed width either
+   clips/wraps the longer bus values or wastes space on shorter tram ones.
+   Instead this column is left to shrink-wrap to its own content (`flex:
+   none` with no explicit `width` sizes a flex item to its content's
+   intrinsic width) combined with `text-align: right`: both
+   `.departures-panel__status` and `.departures-panel__time-block` to its
+   right are fixed-width flex siblings, and the row's `gap: 20px` between
+   them is constant, so this column's right edge stays flush against
+   `.departures-panel__status`'s left edge regardless of content length. Only
+   its LEFT edge moves - further left as the platform text gets longer,
+   eating into `.departures-panel__destination`'s flexible (`flex: 1 1 auto`,
+   `min-width: 0`) share, which still truncates with its own ellipsis exactly
+   as before. Net effect: the column is right-anchored and grows leftward
+   with its content, never clipping/wrapping a longer value and never wasting
+   space on a shorter one. `white-space: nowrap` is kept so a long value still
+   can't wrap onto a second line mid-shrink.
+
+   No `min-width` floor added either: a ragged left edge across rows isn't a
+   new look this introduces - `.departures-panel__destination` already ends
+   at a different point per row (variable text, ellipsis-truncated), so one
+   more column varying in width doesn't read as broken the way it would in a
+   rigid table. Adding a floor would just be guessing at a number with no
+   design-handoff value behind it. */
 .departures-panel__platform {
   flex: none;
-  width: 72px;
   margin: 0;
   text-align: right;
   white-space: nowrap;

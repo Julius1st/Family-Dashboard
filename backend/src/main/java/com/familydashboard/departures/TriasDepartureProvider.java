@@ -106,13 +106,29 @@ class TriasDepartureProvider implements DepartureProvider {
     private static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
 
     /**
-     * Matches the German word "Gleis" (case-insensitively) plus any
-     * whitespace immediately following it, e.g. in {@code "Gleis 1"} or
-     * {@code "GLEIS1"}. Used by {@link #normalizePlatform(String)} to strip
-     * it out of a raw {@code PlannedBay}/{@code EstimatedBay} value before
-     * {@link DepartureDto#from} prepends its own {@code "Gl. "} label.
+     * Matches the German word "Gleis" ("track", used for trams/trains;
+     * case-insensitively) plus any whitespace immediately following it, e.g.
+     * in {@code "Gleis 1"} or {@code "GLEIS1"}. Used by {@link
+     * #normalizePlatform(String)} to detect this label and strip it out of a
+     * raw {@code PlannedBay}/{@code EstimatedBay} value before re-prepending
+     * its own {@code "Gl. "} short form.
      */
     private static final Pattern GLEIS_LABEL = Pattern.compile("(?i)gleis\\s*");
+
+    /**
+     * Matches the German abbreviation "Bstg." ("Bussteig" - "bus platform/
+     * bay"; case-insensitively), with an optional trailing period (real KVV
+     * data has been seen both with and without it) plus any whitespace
+     * immediately following, e.g. in {@code "Bstg. 3"}, {@code "BSTG. 3"},
+     * {@code "bstg 3"} or {@code "bstg3"}. Used by {@link
+     * #normalizePlatform(String)} to detect this label and strip it out of a
+     * raw {@code PlannedBay}/{@code EstimatedBay} value before re-prepending
+     * its own normalized {@code "Bstg. "} form - a bus bay must never be
+     * relabelled {@code "Gl. "} (that specifically implies a tram/train
+     * track), so this is handled as a distinct label from {@link
+     * #GLEIS_LABEL}, not folded into it.
+     */
+    private static final Pattern BSTG_LABEL = Pattern.compile("(?i)bstg\\.?\\s*");
 
     private final RestClient restClient;
     private final TransitProperties transitProperties;
@@ -325,28 +341,61 @@ class TriasDepartureProvider implements DepartureProvider {
     }
 
     /**
-     * Strips the German word "Gleis" ("platform"/"track") out of a raw
-     * {@code PlannedBay}/{@code EstimatedBay} value, case-insensitively.
+     * Normalizes a raw {@code PlannedBay}/{@code EstimatedBay} value into the
+     * already fully-<em>formatted</em> display label (see {@link
+     * Departure#platform()}'s javadoc for that contract) - not a bare value
+     * for some later step to re-label, since which short label is correct
+     * ({@code "Gl. "} vs {@code "Bstg. "}) depends entirely on what, if any,
+     * label word the raw TRIAS text itself already carries.
      *
      * <p>Confirmed against real KVV (Karlsruhe) data: unlike this class's
      * synthetic WireMock test fixture — which, matching some other TRIAS
      * operators' convention, carries a bare number (e.g. {@code "3"}) — KVV's
-     * real {@code PlannedBay}/{@code EstimatedBay} text already spells out
-     * {@code "Gleis 1"} in full. {@link Departure#platform()}'s contract is
-     * the bare value (e.g. {@code "3"}; see its javadoc) — {@link
-     * DepartureDto#from} is the one place that prepends the {@code "Gl. "}
-     * label for display, so leaving {@code "Gleis"} in here would double up
-     * into {@code "Gl. Gleis 1"} once displayed. Normalizing here, in the
-     * adapter, keeps that TRIAS/operator-specific quirk from leaking past
-     * this class, per this project's provider/DTO convention (see {@code
-     * CLAUDE.md}).
+     * real {@code PlannedBay}/{@code EstimatedBay} text always spells a label
+     * out in full, one of two observed so far:
+     * <ul>
+     *   <li>{@code "Gleis 1"} (German "track", used for trams/trains) →
+     *       normalized to {@code "Gl. 1"}.
+     *   <li>{@code "Bstg. 3"} (German "Bussteig", "bus platform/bay"; used
+     *       for buses) → normalized to {@code "Bstg. 3"}, i.e. re-formatted
+     *       but <em>not</em> relabelled {@code "Gl. "} - that short form
+     *       specifically implies a tram/train track, which would be actively
+     *       wrong for a bus departure.
+     * </ul>
+     *
+     * <p>Leaving either raw label word in place and letting a later step
+     * (e.g. {@link DepartureDto#from}, in an earlier version of this method)
+     * unconditionally prepend {@code "Gl. "} is exactly the bug class this
+     * method guards against: it doubled {@code "Gleis"} into {@code "Gl.
+     * Gleis 1"} before, and would equally mislabel a bus bay as {@code "Gl.
+     * Bstg. 3"} or {@code "Gl. 3"} if a caller re-added a blanket {@code "Gl.
+     * "} prefix here. Normalizing fully in the adapter - producing the exact
+     * display string once - keeps this TRIAS/operator-specific quirk from
+     * leaking past this class, per this project's provider/DTO convention
+     * (see {@code CLAUDE.md}): the DTO layer should format a value, not
+     * reinterpret source quirks.
+     *
+     * <p>If the raw text carries neither recognized label word, it's treated
+     * as this fixture's bare-number convention (never actually observed live
+     * - only ever used in tests, per the note above) and defaults to the
+     * {@code "Gl. "} label, matching this method's original, pre-"Bstg."
+     * behavior so that convention's existing callers/tests don't change.
      */
     private static String normalizePlatform(String rawBay) {
-        if (rawBay == null) {
+        if (isBlank(rawBay)) {
             return null;
         }
-        String normalized = GLEIS_LABEL.matcher(rawBay).replaceAll("").trim();
-        return normalized.isEmpty() ? null : normalized;
+        String trimmed = rawBay.trim();
+
+        if (BSTG_LABEL.matcher(trimmed).find()) {
+            String value = BSTG_LABEL.matcher(trimmed).replaceAll("").trim();
+            return value.isEmpty() ? null : "Bstg. %s".formatted(value);
+        }
+        if (GLEIS_LABEL.matcher(trimmed).find()) {
+            String value = GLEIS_LABEL.matcher(trimmed).replaceAll("").trim();
+            return value.isEmpty() ? null : "Gl. %s".formatted(value);
+        }
+        return "Gl. %s".formatted(trimmed);
     }
 
     private static String escapeXml(String value) {

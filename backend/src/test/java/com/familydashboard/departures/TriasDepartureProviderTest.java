@@ -111,7 +111,7 @@ class TriasDepartureProviderTest {
         Departure onTimeConfirmed = departures.get(0);
         assertThat(onTimeConfirmed.line()).isEqualTo("S2");
         assertThat(onTimeConfirmed.destination()).isEqualTo("Bad Herrenalb");
-        assertThat(onTimeConfirmed.platform()).isEqualTo("3");
+        assertThat(onTimeConfirmed.platform()).isEqualTo("Gl. 3");
         assertThat(onTimeConfirmed.scheduledTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 15));
         assertThat(onTimeConfirmed.expectedTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 15));
         assertThat(onTimeConfirmed.status()).isEqualTo(DepartureStatus.ON_TIME);
@@ -122,7 +122,7 @@ class TriasDepartureProviderTest {
         Departure onTimeNoRealtime = departures.get(1);
         assertThat(onTimeNoRealtime.line()).isEqualTo("4");
         assertThat(onTimeNoRealtime.destination()).isEqualTo("Durlach Bahnhof");
-        assertThat(onTimeNoRealtime.platform()).isEqualTo("1");
+        assertThat(onTimeNoRealtime.platform()).isEqualTo("Gl. 1");
         assertThat(onTimeNoRealtime.scheduledTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 18));
         assertThat(onTimeNoRealtime.expectedTime()).isNull();
         assertThat(onTimeNoRealtime.status()).isEqualTo(DepartureStatus.ON_TIME);
@@ -131,7 +131,7 @@ class TriasDepartureProviderTest {
         Departure delayed = departures.get(2);
         assertThat(delayed.line()).isEqualTo("5");
         assertThat(delayed.destination()).isEqualTo("Rheinstetten Rathaus");
-        assertThat(delayed.platform()).isEqualTo("2");
+        assertThat(delayed.platform()).isEqualTo("Gl. 2");
         assertThat(delayed.scheduledTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 20));
         assertThat(delayed.expectedTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 23));
         assertThat(delayed.status()).isEqualTo(DepartureStatus.DELAYED);
@@ -140,7 +140,7 @@ class TriasDepartureProviderTest {
         Departure cancelled = departures.get(3);
         assertThat(cancelled.line()).isEqualTo("2");
         assertThat(cancelled.destination()).isEqualTo("Knielingen");
-        assertThat(cancelled.platform()).isEqualTo("4");
+        assertThat(cancelled.platform()).isEqualTo("Gl. 4");
         assertThat(cancelled.scheduledTime()).isEqualTo(LocalDateTime.of(2026, 10, 1, 8, 25));
         assertThat(cancelled.status()).isEqualTo(DepartureStatus.CANCELLED);
     }
@@ -150,20 +150,25 @@ class TriasDepartureProviderTest {
      * data: KVV's actual {@code PlannedBay}/{@code EstimatedBay} text
      * already spells out the German word "Gleis" in full (e.g. {@code
      * "Gleis 3"}), unlike the bare-number convention this fixture used
-     * before this bug was found. {@link DepartureDto#from} separately
-     * prepends its own {@code "Gl. "} label for display, so without
-     * stripping "Gleis" here first, the two would double up into {@code
-     * "Gl. Gleis 3"} rather than the intended {@code "Gl. 3"}. {@code
-     * trias-stop-event-response.xml} now deliberately mixes both
+     * before this bug was found. An earlier version of {@link
+     * Departure#platform()} held only the bare, label-stripped value (e.g.
+     * {@code "3"}), with {@link DepartureDto#from} separately prepending its
+     * own {@code "Gl. "} label for display - so without stripping "Gleis"
+     * first, the two would double up into {@code "Gl. Gleis 3"} rather than
+     * the intended {@code "Gl. 3"}. {@link Departure#platform()} now holds
+     * the already fully-formatted display label itself (see its updated
+     * javadoc), so this test asserts the final {@code "Gl. 3"} string
+     * directly off {@link Departure#platform()}, with {@link
+     * DepartureDto#from} just confirmed to pass it through unchanged.
+     * {@code trias-stop-event-response.xml} deliberately mixes both
      * conventions (entry 1: {@code "Gleis 3"}/{@code "GLEIS 3"} mixed
      * case, entry 3: {@code "gleis 2"}/{@code "gleis2"} lowercase with and
-     * without a space) so {@link Departure#platform()} is asserted bare
-     * (e.g. {@code "3"}, never {@code "Gleis 3"}) for every one of them in
+     * without a space) so every one of them is asserted as the final {@code
+     * "Gl. N"} string (never {@code "Gleis N"} or {@code "Gl. Gleis N"}) in
      * {@link #nextDeparturesParsesOnTimeDelayedAndCancelledDepartures()}
      * above - this test only re-confirms entry 1 end-to-end through the
-     * display-facing {@link DepartureDto}, so the exact "Gl. 3" (not "Gl.
-     * Gleis 3") final string is covered too, not just the intermediate
-     * {@link Departure#platform()} value.
+     * display-facing {@link DepartureDto} too, not just {@link
+     * Departure#platform()}.
      */
     @Test
     void nextDeparturesStripsTheRedundantGleisWordFromARealKvvStylePlatformValue() {
@@ -175,10 +180,56 @@ class TriasDepartureProviderTest {
         var departures = provider.nextDepartures();
 
         Departure onTimeConfirmed = departures.get(0);
-        assertThat(onTimeConfirmed.platform()).isEqualTo("3");
+        assertThat(onTimeConfirmed.platform()).isEqualTo("Gl. 3");
 
         DepartureDto dto = DepartureDto.from(onTimeConfirmed, onTimeConfirmed.scheduledTime().minusMinutes(5));
         assertThat(dto.platform()).isEqualTo("Gl. 3");
+    }
+
+    /**
+     * Regression test for a real bug seen against live KVV data for BUS
+     * departures specifically: unlike trams (which use "Gleis"), KVV's real
+     * {@code PlannedBay}/{@code EstimatedBay} text for a bus uses the German
+     * abbreviation "Bstg." ("Bussteig" - "bus platform/bay"), e.g. {@code
+     * "Bstg. 3"}. The pre-fix code only recognized "Gleis" - "Bstg." would
+     * pass through {@code normalizePlatform()} untouched and then get
+     * unconditionally relabelled by {@code DepartureDto.from()}'s old {@code
+     * "Gl. " + value} logic, producing the actively wrong {@code "Gl. Bstg.
+     * 3"} (a bus bay mislabelled as a tram track, and doubled besides).
+     * {@code trias-stop-event-response-bus-platform.xml} mixes two "Bstg."
+     * spelling variants the same way the "Gleis" fixture above does (entry
+     * 1: {@code "Bstg. 3"}/{@code "BSTG. 3"} mixed case with the period,
+     * entry 2: {@code "bstg 21"}/{@code "bstg21"} lowercase, no period, with
+     * and without a space) to exercise {@code TriasDepartureProvider}'s
+     * {@code BSTG_LABEL} case/spacing tolerance the same way {@code
+     * GLEIS_LABEL}'s is exercised elsewhere. Asserts the final platform is
+     * {@code "Bstg. N"} - never {@code "Gl.
+     * Bstg. N"}, {@code "Gl. N"}, or {@code "Bstg. Bstg. N"} - both on
+     * {@link Departure#platform()} and end-to-end through {@link
+     * DepartureDto#from}.
+     */
+    @Test
+    void nextDeparturesNormalizesABusBstgPlatformValueWithoutRelabellingItAsAGleis() {
+        wireMockServer.stubFor(post(urlPathEqualTo("/trias"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "text/xml")
+                        .withBody(readFixture("trias-stop-event-response-bus-platform.xml"))));
+
+        var departures = provider.nextDepartures();
+
+        assertThat(departures).hasSize(2);
+
+        // Mixed case, with the period: "Bstg. 3" / "BSTG. 3".
+        Departure mixedCaseWithPeriod = departures.get(0);
+        assertThat(mixedCaseWithPeriod.platform()).isEqualTo("Bstg. 3");
+        DepartureDto mixedCaseDto = DepartureDto.from(mixedCaseWithPeriod, mixedCaseWithPeriod.scheduledTime().minusMinutes(5));
+        assertThat(mixedCaseDto.platform()).isEqualTo("Bstg. 3");
+
+        // Lowercase, no period, with and without a space: "bstg 21" / "bstg21".
+        Departure lowercaseNoPeriod = departures.get(1);
+        assertThat(lowercaseNoPeriod.platform()).isEqualTo("Bstg. 21");
+        DepartureDto lowercaseDto = DepartureDto.from(lowercaseNoPeriod, lowercaseNoPeriod.scheduledTime().minusMinutes(5));
+        assertThat(lowercaseDto.platform()).isEqualTo("Bstg. 21");
     }
 
     /**

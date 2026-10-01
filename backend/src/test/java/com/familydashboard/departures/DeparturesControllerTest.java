@@ -44,10 +44,14 @@ class DeparturesControllerTest {
         // rounded-up 10" behaviour, not a test tolerance workaround.
         LocalDateTime now = LocalDateTime.now(ZONE);
 
+        // Departure.platform() now holds the already fully-formatted display
+        // label (see its javadoc) - TriasDepartureProvider.normalizePlatform()
+        // is what decides "Gl. " vs "Bstg. ", so these test doubles supply
+        // that final string directly rather than a bare value.
         Departure onTime = new Departure(
-                "S2", "Bad Herrenalb", "3", now.plusMinutes(10), null, DepartureStatus.ON_TIME);
+                "S2", "Bad Herrenalb", "Gl. 3", now.plusMinutes(10), null, DepartureStatus.ON_TIME);
         Departure delayed = new Departure(
-                "5", "Rheinstetten Rathaus", "2", now.plusMinutes(5), now.plusMinutes(8), DepartureStatus.DELAYED);
+                "5", "Rheinstetten Rathaus", "Gl. 2", now.plusMinutes(5), now.plusMinutes(8), DepartureStatus.DELAYED);
         Departure cancelled = new Departure(
                 "2", "Knielingen", null, now.plusMinutes(12), null, DepartureStatus.CANCELLED);
         when(departureProvider.nextDepartures()).thenReturn(List.of(onTime, delayed, cancelled));

@@ -24,10 +24,14 @@
   PlannedBay/EstimatedBay also deliberately mix two real-world conventions,
   confirmed against live KVV (Karlsruhe) data: entry 1 spells the German
   word "Gleis" out in full ("Gleis 3"/mixed case "GLEIS 3") - the actual KVV
-  shape, which TriasDepartureProvider.normalizePlatform() must strip so the
-  frontend's "Gl. " label isn't doubled into "Gl. Gleis 3" - while entries 2
-  and 4 keep the original bare-number convention this fixture used before
-  that bug was found, so both shapes stay covered.
+  shape, which TriasDepartureProvider.normalizePlatform() must recognize and
+  reformat into the final display label "Gl. 3" (not leave in place for some
+  later step to doubly relabel into "Gl. Gleis 3") - while entries 2 and 4
+  keep the original bare-number convention this fixture used before that bug
+  was found, so both shapes stay covered. See
+  trias-stop-event-response-bus-platform.xml for the analogous "Bstg."
+  (bus platform) convention, covered separately since it must NOT be
+  relabelled "Gl. ".
 -->
 <Trias version="1.2" xmlns="http://www.vdv.de/trias" xmlns:siri="http://www.siri.org.uk/siri">
     <ServiceDelivery>
