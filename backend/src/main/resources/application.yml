@@ -1,4 +1,17 @@
 spring:
+  # Loads backend/.env (gitignored, never committed) as if it were a
+  # .properties file - Spring Boot's documented "extension hint" syntax for
+  # importing an extensionless file via a specific PropertySourceLoader (see
+  # the "Importing Extensionless Files" section of the Spring Boot reference
+  # docs). `optional:` means a missing .env (e.g. a fresh checkout, or CI)
+  # is not an error - every property sourced from it (currently just
+  # TRANSIT_REQUESTOR_REF, see below) already has a safe blank default.
+  # Relaxed binding resolves TRANSIT_REQUESTOR_REF to transit.requestor-ref
+  # exactly the same way it would for a real OS environment variable of
+  # that name - confirmed empirically against this project's actual Spring
+  # Boot version, not assumed from the docs alone.
+  config:
+    import: "optional:file:.env[.properties]"
   application:
     name: backend
 
@@ -47,19 +60,27 @@ weather:
 transit:
   # The TRIAS StopEventRequest endpoint to POST to, once MobiData BW's
   # response arrives.
-  endpoint-url: ""
+  endpoint-url: "https://efa-bw.de/trias"
   # TRIAS auth is typically a "RequestorRef" identifier issued alongside the
-  # endpoint, not a bearer token - confirm the exact mechanism once MobiData
-  # BW responds, and adjust this property's name/shape then if needed. Left
-  # blank for now; RequestorRef is a required element in every conformant
-  # TRIAS request (see TriasDepartureProvider.buildStopEventRequest()'s
-  # javadoc), so it's always sent, with empty content while this is blank -
-  # note that doesn't make it fully schema-valid either (RequestorRef's
-  # NMTOKEN-restricted type requires a non-empty value), so a genuinely
-  # valid value is still needed once MobiData BW responds.
-  requestor-ref: ""
-  # KVV's internal stop ID for the one stop this dashboard cares about - not
-  # yet known. Fill in from either MobiData BW's response or KVV's own GTFS
-  # static feed (https://projekte.kvv-efa.de/GTFS/google_transit.zip) once
-  # available.
-  stop-point-ref: ""
+  # endpoint, not a bearer token. It's a per-household credential, not
+  # something that belongs in a public repo's history - real values live in
+  # the gitignored backend/.env (TRANSIT_REQUESTOR_REF=...), loaded via
+  # spring.config.import above; this placeholder's blank default is what's
+  # actually committed. RequestorRef is a required element in every
+  # conformant TRIAS request (see TriasDepartureProvider
+  # .buildStopEventRequest()'s javadoc), so it's always sent, with empty
+  # content while this is blank - note that doesn't make it fully
+  # schema-valid either (RequestorRef's NMTOKEN-restricted type requires a
+  # non-empty value), so a genuinely valid value is still needed.
+  requestor-ref: "${TRANSIT_REQUESTOR_REF:}"
+  # KVV's internal stop ID for "Wolfartsweierer Straße" (Karlsruhe). This is
+  # the IFOPT/DHID-format stop-area reference (de:<Gemeindeschlüssel>:<local
+  # id>) used nationwide in Germany's DELFI public-transport open data,
+  # including MobiData BW/KVV's own feeds - found via OpenStreetMap's
+  # ref:IFOPT tag on the stop's "public_transport=station" node (sourced
+  # from the operator, Verkehrsbetriebe Karlsruhe GmbH), not yet confirmed
+  # against a live TRIAS response. This is the stop-area level ref (covers
+  # all platforms at this stop); the individual platforms underneath it
+  # are de:08212:623:1:1 / :2:2 / :21:21 (bus) if a live query against the
+  # area-level ref ever needs narrowing to just one platform/direction.
+  stop-point-ref: "de:08212:623"

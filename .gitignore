@@ -6,3 +6,7 @@ backend/data/
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
+
+# Local secrets (e.g. backend/.env's TRANSIT_REQUESTOR_REF) - never committed
+.env
+.env.*
