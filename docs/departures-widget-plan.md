@@ -1,5 +1,16 @@
 # Departures Widget Plan
 
+**Status: implemented, pending merge** (`com.familydashboard.departures`,
+`DeparturesPanel`). MobiData BW access was granted after this doc was
+written — `transit.*` in `application.yml`/`backend/.env` is now filled in
+for the real "Wolfartsweierer Straße" stop (see README's "Configuration"
+section). This doc reflects the plan as originally approved, not every
+follow-up refinement made after Ticket 4 against real live data (e.g. the
+"Bstg." bus-platform label handling, the real stop name replacing a
+hardcoded placeholder, a timezone bug in the countdown, 60-second polling,
+KVV's own per-line badge colors) — read the current code/tests for exact
+final behavior.
+
 This breaks the departures widget (Phase 5 per `docs/PLAN.md`) into
 ticket-sized units of work, mirroring `archive/phase-3-plan.md`'s structure
 for the Todo widget. The visual design is already fully specified in

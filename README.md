@@ -18,15 +18,19 @@ on a touchscreen in the living room.
 
 ## Status
 
-Phases 1 through 4 are done: `backend/` builds, boots, and exposes
-`/api/widgets` plus a `/api/todos` CRUD API backing the first real widget;
-`frontend/` renders a dashboard shell with a working Todo widget —
-per-household-member lists you can add to, check off, and delete — tuned
-for a fixed touch kiosk display; the whole app packages into a single
-Docker image runnable via `docker-compose up`; and CI runs both sides'
-tests on every push/PR. Phase 5 (weather/transit widgets, real hardware
-deployment) is up next. See [`docs/PLAN.md`](docs/PLAN.md) for the full
-phased roadmap and the decisions behind it.
+Phases 1 through 4, plus the weather and departures widgets from Phase 5,
+are done: `backend/` builds, boots, and exposes `/api/widgets`,
+`/api/todos`, `/api/weather`, and `/api/departures`; `frontend/` renders a
+two-page kiosk UI — a per-household-member Tasks board, and an
+Abfahrten/Wetter page showing live KVV departures (via TRIAS) alongside
+Open-Meteo weather for Karlsruhe — tuned for a fixed touch kiosk display;
+the whole app packages into a single Docker image runnable via
+`docker-compose up`; and CI runs both sides' tests on every push/PR. Still
+open from Phase 5: layout persistence/customization, remote access, and
+real hardware deployment. See [`docs/PLAN.md`](docs/PLAN.md) for the full
+phased roadmap, and [`docs/weather-widget-plan.md`](docs/weather-widget-plan.md)/
+[`docs/departures-widget-plan.md`](docs/departures-widget-plan.md) for
+those two widgets' own design decisions.
 
 ## Running the project
 
@@ -41,15 +45,31 @@ Both the backend and frontend can be run today (from the repo root):
 The Maven wrapper in `backend/` fetches Maven itself, so no local install is
 required.
 
-### Local secrets
+### Configuration
 
-The departures widget's TRIAS `requestor-ref` credential is not committed —
-put it in a `backend/.env` file (gitignored), which Spring Boot loads
-automatically:
+`household.members` (todo widget) and `weather.latitude`/`weather.longitude`
+(weather widget, defaulting to Karlsruhe) live directly in
+`backend/src/main/resources/application.yml` — no secrets, just plain
+config.
+
+The departures widget needs a TRIAS connection (`transit.*`), one stop per
+deployment (see [`docs/departures-widget-plan.md`](docs/departures-widget-plan.md)
+for the full background): `transit.endpoint-url` and `transit.stop-point-ref`
+also live in `application.yml` (already filled in for this household's real
+stop, "Wolfartsweierer Straße" in Karlsruhe — change both to point at a
+different stop/region's TRIAS endpoint if you fork this). The one genuine
+secret, `transit.requestor-ref` (the TRIAS access credential issued by
+MobiData BW or another TRIAS provider), is **not** committed — put it in a
+`backend/.env` file (gitignored), which Spring Boot loads automatically:
 
 ```
 TRANSIT_REQUESTOR_REF=your-real-requestor-ref
 ```
+
+Without real `transit.*` values, `GET /api/departures` just returns an
+empty board (no error) and the widget shows its normal "no departures"
+empty state — the app runs fine without them, just with that one widget
+showing nothing.
 
 ## Run with Docker
 

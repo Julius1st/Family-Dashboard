@@ -39,8 +39,11 @@ in the living room eventually.
       per-household-member CRUD lists, end-to-end.
 - [x] **Phase 4 — Deployment packaging.** `docker-compose up` runs the full
       stack; sanity-check touch usability at kiosk scale.
-- [ ] **Phase 5 (later, separately scoped).** Weather widget, transit/train
-      widget, layout persistence/customization, remote access, real hardware
+- [ ] **Phase 5 (later, separately scoped).** Weather widget (Open-Meteo)
+      and departures/transit widget (KVV via TRIAS) are both done — see
+      [`docs/weather-widget-plan.md`](weather-widget-plan.md)/
+      [`docs/departures-widget-plan.md`](departures-widget-plan.md). Still
+      open: layout persistence/customization, remote access, real hardware
       deployment.
 
 Each phase (or a smaller slice of one, if it doesn't fit a single sensible

@@ -1,5 +1,11 @@
 # Weather Widget Plan
 
+**Status: implemented and merged** (`com.familydashboard.weather`,
+`WeatherPanel`). This doc reflects the plan as originally approved, not
+every follow-up refinement made after Ticket 4 (e.g. the 3-day outlook,
+per-hour rain amounts, the widget's final 1/3-of-the-row sizing) — read the
+current code/tests for exact final behavior.
+
 This breaks the weather widget (Phase 5 per `docs/PLAN.md`) into
 ticket-sized units of work, mirroring `archive/phase-3-plan.md`'s structure
 for the Todo widget. The visual design is already fully specified in
